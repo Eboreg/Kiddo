@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -6,9 +9,22 @@ plugins {
     alias(libs.plugins.dagger.hilt.android)
 }
 
+val keystoreProperties = Properties()
+
+keystoreProperties.load(FileInputStream(rootProject.file("keystore.properties")))
+
 android {
     namespace = "us.huseli.kiddo"
     compileSdk = 35
+
+    signingConfigs {
+        create("release") {
+            storeFile = file(keystoreProperties["storeFile"] as String)
+            storePassword = keystoreProperties["storePassword"] as String
+            keyAlias = keystoreProperties["keyAlias"] as String
+            keyPassword = keystoreProperties["keyPassword"] as String
+        }
+    }
 
     defaultConfig {
         applicationId = "us.huseli.kiddo"
@@ -20,21 +36,31 @@ android {
     }
 
     buildTypes {
+        debug {
+            isDebuggable = true
+            applicationIdSuffix = ".debug"
+        }
         release {
-            isMinifyEnabled = false
+            isDebuggable = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
     kotlinOptions {
         jvmTarget = "17"
     }
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -76,4 +102,13 @@ dependencies {
     // Ktor for websockets:
     implementation(libs.ktor.websockets)
     implementation(libs.ktor.cio)
+
+    // Reorderable:
+    implementation(libs.reorderable)
+
+    // Just for ListItemAll.toString()
+    implementation(libs.kotlin.reflect)
+
+    // Splashscreen:
+    implementation(libs.androidx.core.splashscreen)
 }

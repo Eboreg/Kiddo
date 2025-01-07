@@ -7,13 +7,19 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(private val repository: Repository) : AbstractBaseViewModel() {
-    val host = repository.host
+    val hostname = repository.hostname
     val jsonPort = repository.jsonPort
+    val password = repository.password
+    val username = repository.username
     val websocketPort = repository.websocketPort
 
-    fun setHost(value: String) = repository.setHost(value)
-
-    fun setJsonPort(value: Int) = repository.setJsonPort(value)
-
-    fun setWebsocketPort(value: Int) = repository.setWebsocketPort(value)
+    fun update(hostname: String, username: String, password: String, jsonPort: String, websocketPort: String) {
+        repository.updateSettings(
+            hostname = hostname,
+            username = username,
+            password = password,
+            jsonPort = jsonPort,
+            websocketPort = websocketPort,
+        )
+    }
 }

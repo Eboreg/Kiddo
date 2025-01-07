@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <style name="Theme.Kiddo" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.Kiddo.Starting" parent="Theme.SplashScreen">
+        <item name="postSplashScreenTheme">@style/Theme.Kiddo</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splashscreen_icon</item>
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+    </style>
 </resources>

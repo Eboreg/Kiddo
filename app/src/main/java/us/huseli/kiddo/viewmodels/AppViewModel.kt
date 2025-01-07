@@ -1,17 +1,52 @@
 package us.huseli.kiddo.viewmodels
 
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import us.huseli.kiddo.KodiNotificationListener
 import us.huseli.kiddo.Repository
+import us.huseli.kiddo.data.enums.InputAction
+import us.huseli.kiddo.data.notifications.Notification
+import us.huseli.kiddo.data.notifications.data.InputOnInputRequested
 import us.huseli.retaintheme.extensions.launchOnIOThread
 import us.huseli.retaintheme.utils.AbstractBaseViewModel
 import javax.inject.Inject
 
 @HiltViewModel
-class AppViewModel @Inject constructor(private val repository: Repository) : AbstractBaseViewModel() {
-    val isPlaying = repository.isPlaying
-    val playerPercentage = repository.playerPercentage
-    val playerThumbnailImage = repository.playerThumbnailImage
-    val playerTitle = repository.playerTitle
+class AppViewModel @Inject constructor(private val repository: Repository) : AbstractBaseViewModel(),
+    KodiNotificationListener {
+    private val _inputRequest = MutableStateFlow<InputOnInputRequested?>(null)
 
-    fun playOrPause() = launchOnIOThread { repository.playOrPause() }
+    val inputRequest = _inputRequest.asStateFlow()
+
+    init {
+        repository.addNotificationListener(this)
+    }
+
+    fun cancelInputRequest() {
+        launchOnIOThread { repository.executeInputAction(InputAction.Close) }
+        _inputRequest.value = null
+    }
+
+    fun decreaseVolume() = launchOnIOThread { repository.decreaseVolume() }
+
+    fun increaseVolume() = launchOnIOThread { repository.increaseVolume() }
+
+    fun sendText(text: String) = launchOnIOThread {
+        repository.sendText(text = text, done = true)
+        _inputRequest.value = null
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        repository.removeNotificationListener(this)
+    }
+
+    override fun onKodiNotification(notification: Notification<*>) {
+        if (notification.data is InputOnInputRequested) {
+            _inputRequest.value = notification.data
+        } else if (notification.method == "Input.OnInputFinished") {
+            _inputRequest.value = null
+        }
+    }
 }

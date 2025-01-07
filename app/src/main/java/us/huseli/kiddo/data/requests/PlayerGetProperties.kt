@@ -1,0 +1,17 @@
+package us.huseli.kiddo.data.requests
+
+import us.huseli.kiddo.data.enums.PlayerPropertyName
+import us.huseli.kiddo.data.requests.interfaces.IRequestHasPlayerId
+import us.huseli.kiddo.data.requests.interfaces.IRequestRefResult
+import us.huseli.kiddo.data.types.PlayerPropertyValue
+import java.lang.reflect.Type
+
+class PlayerGetProperties(
+    override val playerId: Int,
+    val properties: List<PlayerPropertyName>,
+) : IRequestRefResult<PlayerPropertyValue>, IRequestHasPlayerId {
+    override val method: String = "Player.GetProperties"
+    override val typeOfResult: Type = PlayerPropertyValue::class.java
+
+    override fun getParams(): Map<String, Any?> = mapOf("playerid" to playerId, "properties" to properties)
+}
