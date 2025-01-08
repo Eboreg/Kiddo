@@ -1,6 +1,7 @@
 package us.huseli.kiddo.compose.screens.moviedetails
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import us.huseli.kiddo.R
 import us.huseli.kiddo.data.types.interfaces.IListItemBase
 import us.huseli.kiddo.randomBasicColor
+import us.huseli.kiddo.takeIfNotBlank
 import us.huseli.kiddo.viewmodels.MovieDetailsViewModel
 
 @Suppress("FunctionName")
@@ -42,8 +44,9 @@ fun LazyGridScope.MovieDetailsCast(
     cast: List<IListItemBase.VideoCast>,
     headlineStyle: TextStyle,
     viewModel: MovieDetailsViewModel,
-    modifier: Modifier = Modifier.Companion,
-    memberModifier: Modifier = Modifier.Companion,
+    modifier: Modifier = Modifier,
+    memberModifier: Modifier = Modifier,
+    onPersonClick: (String) -> Unit,
 ) {
     item(span = { GridItemSpan(maxLineSpan) }) {
         Text(stringResource(R.string.cast), style = headlineStyle, modifier = modifier)
@@ -54,48 +57,48 @@ fun LazyGridScope.MovieDetailsCast(
         val background = randomBasicColor()
 
         LaunchedEffect(member.thumbnail) {
-            portrait = member.thumbnail?.let { viewModel.getImageBitmap(it) }
+            portrait = member.thumbnail?.takeIfNotBlank()?.let { viewModel.getImageBitmap(it) }
         }
 
         Card(
-            modifier = memberModifier,
+            modifier = memberModifier.clickable { onPersonClick(member.name) },
             shape = MaterialTheme.shapes.extraSmall,
             colors = CardDefaults.cardColors(containerColor = background),
         ) {
-            Box(modifier = Modifier.Companion.fillMaxSize()) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 portrait?.also {
                     Image(
                         bitmap = it,
                         contentDescription = null,
-                        contentScale = ContentScale.Companion.Crop,
-                        modifier = Modifier.Companion.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
                     )
                 } ?: run {
                     Icon(
                         imageVector = Icons.Sharp.Person,
                         contentDescription = null,
-                        modifier = Modifier.Companion
+                        modifier = Modifier
                             .padding(top = 5.dp)
                             .fillMaxWidth()
                             .aspectRatio(1f)
-                            .align(Alignment.Companion.TopCenter),
+                            .align(Alignment.TopCenter),
                     )
                 }
 
                 Surface(
-                    modifier = Modifier.Companion
-                        .align(Alignment.Companion.BottomCenter)
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
                         .fillMaxWidth(),
                     color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f),
                 ) {
                     Column(
-                        modifier = Modifier.Companion.padding(5.dp),
+                        modifier = Modifier.padding(5.dp),
                         verticalArrangement = Arrangement.spacedBy(5.dp),
                     ) {
                         Text(
                             member.role,
                             style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Companion.Bold
+                            fontWeight = FontWeight.Bold
                         )
                         Text(member.name, style = MaterialTheme.typography.bodySmall)
                     }

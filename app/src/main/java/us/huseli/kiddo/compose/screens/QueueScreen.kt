@@ -26,13 +26,11 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 import us.huseli.kiddo.compose.screens.queue.QueueItem
 import us.huseli.kiddo.data.PlaylistWithItems
 import us.huseli.kiddo.data.enums.PlaylistType
+import us.huseli.kiddo.takeIfNotBlank
 import us.huseli.kiddo.viewmodels.QueueViewModel
 
 @Composable
-fun QueueScreen(
-    modifier: Modifier = Modifier,
-    viewModel: QueueViewModel = hiltViewModel(),
-) {
+fun QueueScreen(viewModel: QueueViewModel = hiltViewModel()) {
     var playlistType by remember { mutableStateOf<PlaylistType>(PlaylistType.Video) }
 
     val currentItem by viewModel.currentItem.collectAsStateWithLifecycle()
@@ -62,7 +60,7 @@ fun QueueScreen(
     LaunchedEffect(reorderableState.isAnyItemDragging) {
         if (!reorderableState.isAnyItemDragging) {
             currentPlaylistCombo?.also { combo ->
-                playlistCombos += combo.playlist.type to combo.copy(items = viewModel.getPlaylistItems(combo.playlist.playlistid))
+                playlistCombos += combo.playlist.type to combo.copy(items = viewModel.listPlaylistItems(combo.playlist.playlistid))
             }
             viewModel.playlists.collect { combos ->
                 playlistCombos = combos
@@ -70,7 +68,7 @@ fun QueueScreen(
         }
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize()) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             playlistCombos.values.forEach { combo ->
                 FilledTonalIconToggleButton(
@@ -100,7 +98,7 @@ fun QueueScreen(
                     onPlayClick = {
                         currentPlaylistCombo?.playlist?.playlistId?.also { viewModel.playPlaylistItem(it, index) }
                     },
-                    getThumbnail = { entry.thumbnail?.let { viewModel.getImageBitmap(it) } },
+                    getThumbnail = { entry.thumbnail?.takeIfNotBlank()?.let { viewModel.getImageBitmap(it) } },
                 )
             }
         }

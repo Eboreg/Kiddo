@@ -26,10 +26,7 @@ import us.huseli.kiddo.compose.controls.CompactTextField
 import us.huseli.kiddo.viewmodels.SettingsViewModel
 
 @Composable
-fun SettingsScreen(
-    modifier: Modifier = Modifier,
-    viewModel: SettingsViewModel = hiltViewModel(),
-) {
+fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val hostname by viewModel.hostname.collectAsStateWithLifecycle()
     val jsonPort by viewModel.jsonPort.collectAsStateWithLifecycle()
     val password by viewModel.password.collectAsStateWithLifecycle()
@@ -44,7 +41,7 @@ fun SettingsScreen(
 
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 10.dp),
     ) {

@@ -50,6 +50,7 @@ class KodiWebsocketEngine @Inject constructor(@ApplicationContext context: Conte
     }
     private val _playerId = MutableStateFlow<Int?>(null)
     private val _playerSpeed = MutableStateFlow<Int?>(null)
+    private val _consecutiveErrorCount = MutableStateFlow(0)
 
     val connectError = _connectError.asStateFlow()
     val connectErrorString = _connectError.map { it?.message ?: it?.toString() }.distinctUntilChanged()
@@ -83,6 +84,7 @@ class KodiWebsocketEngine @Inject constructor(@ApplicationContext context: Conte
                                 Notification.fromJson(frame.readText())?.also { notification ->
                                     listeners.forEach { it.onKodiNotification(notification) }
                                 }
+                                _consecutiveErrorCount.value = 0
                             }
                         }
                     } catch (e: Throwable) {
@@ -90,9 +92,10 @@ class KodiWebsocketEngine @Inject constructor(@ApplicationContext context: Conte
                             if (e !is KodiError) KodiConnectionError(url = url, cause = e)
                             else e
 
+                        _consecutiveErrorCount.value++
                         logError("client.webSocket()", error)
                         if (error !is KodiWebsocketReceiveError) {
-                            _connectError.value = error
+                            if (_consecutiveErrorCount.value >= 3) _connectError.value = error
                             delay(3000)
                         }
                     } finally {

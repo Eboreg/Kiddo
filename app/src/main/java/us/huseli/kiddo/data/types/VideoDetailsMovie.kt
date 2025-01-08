@@ -4,7 +4,11 @@ import us.huseli.kiddo.AbstractListMembers
 import us.huseli.kiddo.data.types.interfaces.IListItemBase
 import us.huseli.kiddo.data.types.interfaces.IVideoDetailsFile
 import us.huseli.kiddo.data.types.interfaces.IVideoDetailsMovie
+import us.huseli.kiddo.sensibleFormat
 import us.huseli.kiddo.takeIfNotBlank
+import us.huseli.kiddo.takeIfNotEmpty
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 data class VideoDetailsMovie(
     override val label: String,
@@ -47,17 +51,14 @@ data class VideoDetailsMovie(
     override val writer: List<String>? = null,
     override val year: Int? = null,
 ) : IVideoDetailsMovie, AbstractListMembers() {
-    val directorString: String?
-        get() = director?.joinToString(", ")
-
     val displayTitle: String
         get() = title?.takeIfNotBlank() ?: label
 
-    val countryString: String?
-        get() = country?.joinToString(", ")
-
-    val genreString: String?
-        get() = genre?.joinToString(", ")
+    val supportingContent: String?
+        get() = listOfNotNull(
+            runtime?.toDuration(DurationUnit.SECONDS)?.sensibleFormat(withSeconds = false),
+            year?.takeIf { it > 0 }?.toString(),
+        ).takeIfNotEmpty()?.joinToString(" · ")
 
     override fun toString(): String = memberPropertiesToString()
 }

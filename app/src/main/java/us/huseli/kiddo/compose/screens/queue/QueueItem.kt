@@ -36,10 +36,6 @@ import us.huseli.kiddo.R
 import us.huseli.kiddo.data.enums.PlaylistType
 import us.huseli.kiddo.data.types.ListItemAll
 import us.huseli.kiddo.takeIfNotBlank
-import us.huseli.kiddo.takeIfNotEmpty
-import us.huseli.retaintheme.extensions.sensibleFormat
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 
 @Composable
@@ -83,13 +79,7 @@ fun LazyItemScope.QueueItem(
                 )
             },
             supportingContent = {
-                val text = listOfNotNull(
-                    entry.artistString,
-                    entry.directorString,
-                    entry.runtime?.toDuration(DurationUnit.SECONDS)?.sensibleFormat(),
-                ).takeIfNotEmpty()?.joinToString(" · ")
-
-                text?.let { Text(it, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                entry.supportingContent?.let { Text(it, maxLines = 1, overflow = TextOverflow.Ellipsis) }
             },
             leadingContent = {
                 Box(

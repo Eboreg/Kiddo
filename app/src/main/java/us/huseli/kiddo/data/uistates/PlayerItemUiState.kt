@@ -3,9 +3,9 @@ package us.huseli.kiddo.data.uistates
 import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.types.ListItemAll
 import us.huseli.kiddo.data.types.PlayerPropertyValue
+import us.huseli.kiddo.sensibleFormat
 import us.huseli.kiddo.takeIfNotBlank
 import us.huseli.kiddo.takeIfNotEmpty
-import us.huseli.retaintheme.extensions.sensibleFormat
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -25,7 +25,11 @@ data class PlayerItemUiState(val item: ListItemAll, val properties: PlayerProper
         get() = properties?.subtitleenabled == true
 
     val supportingContent: String?
-        get() = listOfNotNull(artist, director, duration?.sensibleFormat()).takeIfNotEmpty()?.joinToString(" · ")
+        get() = listOfNotNull(
+            artist,
+            director,
+            duration?.sensibleFormat(withSeconds = false)
+        ).takeIfNotEmpty()?.joinToString(" · ")
 
     val title: String
         get() = item.title?.takeIfNotBlank() ?: item.label

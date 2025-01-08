@@ -15,7 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import us.huseli.retaintheme.extensions.sensibleFormat
+import us.huseli.kiddo.sensibleFormat
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 

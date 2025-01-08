@@ -22,6 +22,10 @@ class PlayerPanelViewModel @Inject constructor(private val repository: Repositor
 
     fun disableSubtitle() = launchOnIOThread { repository.disableSubtitle() }
 
+    fun goToNextItem() = launchOnIOThread { repository.goToNextItem() }
+
+    fun goToPreviousItem() = launchOnIOThread { repository.goToPreviousItem() }
+
     fun increasePlayerSpeed() = launchOnIOThread { repository.increasePlayerSpeed() }
 
     fun openSubtitleSearch() = launchOnIOThread { repository.openSubtitleSearch() }

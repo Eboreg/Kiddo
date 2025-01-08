@@ -8,6 +8,7 @@ dagger = "2.54"
 gson = "2.11.0"
 hiltNavigationCompose = "1.2.0"
 kotlin = "2.1.0"
+kotlinxSerializationJson = "1.7.3"
 ktor = "3.0.3"
 lifecycleRuntimeKtx = "2.8.7"
 materialIconsExtended = "1.7.6"
@@ -37,6 +38,7 @@ gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "dagger" }
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "dagger" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 ktor-cio = { group = "io.ktor", name = "ktor-client-cio", version.ref = "ktor" }
 ktor-websockets = { group = "io.ktor", name = "ktor-client-websockets", version.ref = "ktor" }
 reorderable = { group = "sh.calvin.reorderable", name = "reorderable", version.ref = "reorderable" }
@@ -48,3 +50,4 @@ dagger-hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "da
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

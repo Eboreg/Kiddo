@@ -1,0 +1,26 @@
+package us.huseli.kiddo.data.types.interfaces
+
+import us.huseli.kiddo.data.enums.AudioAlbumReleaseType
+import us.huseli.kiddo.data.types.AudioDetailsGenre
+
+interface IAudioDetailsAlbum : IAudioDetailsMedia {
+    val albumduration: Int?
+    val albumid: Int
+    val albumlabel: String?
+    val albumstatus: String?
+    val compilation: Boolean?
+    val description: String?
+    val isboxset: Boolean?
+    val lastplayed: String?
+    val mood: List<String>?
+    val musicbrainzalbumid: String?
+    val musicbrainzreleasegroupid: String?
+    val playcount: Int?
+    val releasetype: AudioAlbumReleaseType?
+    val songgenres: List<AudioDetailsGenre>?
+    val sourceid: List<Int>?
+    val style: List<String>?
+    val theme: List<String>?
+    val totaldiscs: Int?
+    val type: String?
+}

@@ -5,6 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import us.huseli.retaintheme.ui.theme.LocalBasicColors
 import us.huseli.retaintheme.utils.ILogger
+import java.util.Locale
 import kotlin.time.Duration
 
 @Suppress("unused")
@@ -48,3 +49,15 @@ fun randomBasicColor(): Color {
 
     return colorList.random()
 }
+
+@Suppress("UNCHECKED_CAST")
+fun <K, V> Map<K, V?>.filterValuesNotNull(): Map<K, V> = filterValues { it != null } as Map<K, V>
+
+fun <K, V> Map<K, V>.takeIfNotEmpty(): Map<K, V>? = takeIf { it.isNotEmpty() }
+
+fun Duration.sensibleFormat(withSeconds: Boolean = true) =
+    toComponents { hours, minutes, seconds, _ ->
+        if (withSeconds && hours > 0) String.format(Locale.getDefault(), "%d:%02d:%02d", hours, minutes, seconds)
+        else if (withSeconds) String.format(Locale.getDefault(), "%d:%02d", minutes, seconds)
+        else String.format(Locale.getDefault(), "%d:%02d", hours, minutes)
+    }

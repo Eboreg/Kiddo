@@ -24,29 +24,26 @@ import us.huseli.kiddo.viewmodels.RemoteControlViewModel
 @Composable
 fun RemoteControlScreen(
     onMovieDetailsClick: (Int) -> Unit,
-    modifier: Modifier = Modifier,
     viewModel: RemoteControlViewModel = hiltViewModel()
 ) {
     val playerCoverImage by viewModel.playerCoverImage.collectAsStateWithLifecycle()
     val playerItemState by viewModel.playerItemUiState.collectAsStateWithLifecycle()
     val connectErrors by viewModel.connectErrors.collectAsStateWithLifecycle()
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize()) {
         playerCoverImage?.also {
             Image(it, null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = 0.5f)
         }
 
         Column(
             verticalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(10.dp),
+            modifier = Modifier.fillMaxSize()
         ) {
             playerItemState?.also {
                 PlayerPanel(state = it, onMovieDetailsClick = onMovieDetailsClick)
             } ?: run { PlayerPanelNoMedia(errors = connectErrors) }
 
-            BoxWithConstraints {
+            BoxWithConstraints(modifier = Modifier.padding(horizontal = 10.dp).padding(bottom = 10.dp)) {
                 val maxSize = remember(this.maxWidth, this.maxHeight) { min(this.maxWidth, this.maxHeight) }
 
                 ControlPanel(buttonSize = maxSize / 3f, onKeyPress = { viewModel.sendKeypress(it) })

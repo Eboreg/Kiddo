@@ -1,5 +1,6 @@
 package us.huseli.kiddo.compose.screens.moviedetails
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -18,9 +19,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import us.huseli.kiddo.R
 import us.huseli.kiddo.data.types.VideoDetailsMovie
+import us.huseli.kiddo.sensibleFormat
 import us.huseli.kiddo.takeIfNotBlank
 import us.huseli.kiddo.takeIfNotEmpty
-import us.huseli.retaintheme.extensions.sensibleFormat
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -29,6 +30,10 @@ import kotlin.time.toDuration
 fun MovieDetailsInfo(
     details: VideoDetailsMovie,
     headlineStyle: TextStyle,
+    onPersonClick: (String) -> Unit,
+    onGenreClick: (String) -> Unit,
+    onYearClick: (Int) -> Unit,
+    onCountryClick: (String) -> Unit,
     modifier: Modifier = Modifier.Companion,
 ) {
     Column(
@@ -37,20 +42,40 @@ fun MovieDetailsInfo(
     ) {
         Text(stringResource(R.string.information), style = headlineStyle)
 
-        details.runtime?.toDuration(DurationUnit.SECONDS)?.sensibleFormat()?.also {
+        details.runtime?.toDuration(DurationUnit.SECONDS)?.sensibleFormat(withSeconds = false)?.also {
             MovieDetailsInfoRow(stringResource(R.string.length), it)
         }
-        details.year?.toString()?.also {
-            MovieDetailsInfoRow(stringResource(R.string.year), it)
+        details.year?.also {
+            MovieDetailsInfoRow(stringResource(R.string.year)) {
+                Text(it.toString(), modifier = Modifier.clickable { onYearClick(it) })
+            }
         }
-        details.directorString?.also {
-            MovieDetailsInfoRow(stringResource(R.string.directors), it)
+        details.director?.takeIfNotEmpty()?.also { directors ->
+            MovieDetailsInfoRow(stringResource(R.string.directors)) {
+                Column(horizontalAlignment = Alignment.End) {
+                    for (director in directors) {
+                        Text(director, modifier = Modifier.clickable { onPersonClick(director) })
+                    }
+                }
+            }
         }
-        details.countryString?.also {
-            MovieDetailsInfoRow(stringResource(R.string.countries), it)
+        details.country?.takeIfNotEmpty()?.also { countries ->
+            MovieDetailsInfoRow(stringResource(R.string.countries)) {
+                Column(horizontalAlignment = Alignment.End) {
+                    for (country in countries) {
+                        Text(country, modifier = Modifier.clickable { onCountryClick(country) })
+                    }
+                }
+            }
         }
-        details.genreString?.also {
-            MovieDetailsInfoRow(stringResource(R.string.genres), it)
+        details.genre?.takeIfNotEmpty()?.also { genres ->
+            MovieDetailsInfoRow(stringResource(R.string.genres)) {
+                Column(horizontalAlignment = Alignment.End) {
+                    for (genre in genres) {
+                        Text(genre, modifier = Modifier.clickable { onGenreClick(genre) })
+                    }
+                }
+            }
         }
         details.originaltitle?.takeIfNotBlank()?.takeIf { it != details.displayTitle }?.also {
             MovieDetailsInfoRow(stringResource(R.string.original_title), it)

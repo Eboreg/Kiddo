@@ -24,7 +24,6 @@ import us.huseli.kiddo.data.enums.GuiPropertyName
 import us.huseli.kiddo.data.enums.ListFieldsAll
 import us.huseli.kiddo.data.enums.PlayerPropertyName
 import us.huseli.kiddo.data.enums.PlaylistType
-import us.huseli.kiddo.data.enums.VideoFieldsMovie
 import us.huseli.kiddo.data.notifications.interfaces.IHasPlayerSpeed
 import us.huseli.kiddo.data.requests.ApplicationGetProperties
 import us.huseli.kiddo.data.requests.GuiGetProperties
@@ -35,12 +34,10 @@ import us.huseli.kiddo.data.requests.PlayerSeek
 import us.huseli.kiddo.data.requests.PlayerSetSubtitle
 import us.huseli.kiddo.data.requests.PlaylistGetItems
 import us.huseli.kiddo.data.requests.PlaylistGetPlaylists
-import us.huseli.kiddo.data.requests.VideoLibraryGetMovieDetails
 import us.huseli.kiddo.data.requests.interfaces.IRequest
 import us.huseli.kiddo.data.types.GuiPropertyValue
 import us.huseli.kiddo.data.types.ListItemAll
 import us.huseli.kiddo.data.types.PlayerPropertyValue
-import us.huseli.kiddo.data.types.VideoDetailsMovie
 import us.huseli.retaintheme.utils.AbstractScopeHolder
 import us.huseli.retaintheme.utils.ILogger
 import javax.inject.Inject
@@ -70,7 +67,7 @@ class KodiJsonRpcEngine @Inject constructor(@ApplicationContext context: Context
     private val _playerItem = MutableStateFlow<ListItemAll?>(null)
     private val _playerProperties = MutableStateFlow<PlayerPropertyValue?>(null)
     private val _playerSpeed = MutableStateFlow<Int?>(null)
-    private val _playerTotalTime = MutableStateFlow(0L)
+    private val _playerTotalTime = MutableStateFlow<Long?>(null)
     private val _playlists =
         MutableStateFlow<Map<PlaylistType, PlaylistWithItems>>(emptyMap())
     private val _port = MutableStateFlow<Int>(preferences.getInt(PREF_KODI_PORT, 80))
@@ -165,7 +162,7 @@ class KodiJsonRpcEngine @Inject constructor(@ApplicationContext context: Context
             for (playlist in playlists) {
                 _playlists.value += playlist.type to PlaylistWithItems(
                     playlist = playlist,
-                    items = getPlaylistItems(playlistId = playlist.playlistid),
+                    items = listPlaylistItems(playlistId = playlist.playlistid),
                 )
             }
         }
@@ -173,35 +170,13 @@ class KodiJsonRpcEngine @Inject constructor(@ApplicationContext context: Context
 
     suspend fun getGuiProperties() = post(GuiGetProperties(properties = listOf(GuiPropertyName.Fullscreen)))
 
-    suspend fun getMovieDetails(id: Int): VideoDetailsMovie? {
-        return post(
-            VideoLibraryGetMovieDetails(
-                movieId = id,
-                properties = listOf(
-                    VideoFieldsMovie.Art,
-                    VideoFieldsMovie.Cast,
-                    VideoFieldsMovie.Country,
-                    VideoFieldsMovie.Director,
-                    VideoFieldsMovie.Fanart,
-                    VideoFieldsMovie.File,
-                    VideoFieldsMovie.Genre,
-                    VideoFieldsMovie.OriginalTitle,
-                    VideoFieldsMovie.Plot,
-                    VideoFieldsMovie.PlotOutline,
-                    VideoFieldsMovie.Rating,
-                    VideoFieldsMovie.Runtime,
-                    VideoFieldsMovie.Tag,
-                    VideoFieldsMovie.Tagline,
-                    VideoFieldsMovie.Thumbnail,
-                    VideoFieldsMovie.Title,
-                    VideoFieldsMovie.Votes,
-                    VideoFieldsMovie.Year,
-                ),
-            )
-        )?.moviedetails
+    fun initialize() {
+        launchOnIOThread { fetchApplicationProperties() }
+        launchOnIOThread { fetchActivePlayer() }
+        launchOnIOThread { getGuiProperties() }
     }
 
-    suspend fun getPlaylistItems(playlistId: Int): List<ListItemAll> {
+    suspend fun listPlaylistItems(playlistId: Int): List<ListItemAll> {
         return post(
             PlaylistGetItems(
                 playlistId = playlistId,
@@ -217,12 +192,6 @@ class KodiJsonRpcEngine @Inject constructor(@ApplicationContext context: Context
                 ),
             )
         )?.items ?: emptyList()
-    }
-
-    fun initialize() {
-        launchOnIOThread { fetchApplicationProperties() }
-        launchOnIOThread { fetchActivePlayer() }
-        launchOnIOThread { getGuiProperties() }
     }
 
     suspend fun <Result> post(request: IRequest<Result>): Result? {

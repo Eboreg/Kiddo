@@ -24,7 +24,7 @@ class QueueViewModel @Inject constructor(private val repository: Repository) : A
 
     suspend fun getImageBitmap(path: String) = repository.getImageBitmap(path)
 
-    suspend fun getPlaylistItems(playlistId: Int) = repository.getPlaylistItems(playlistId)
+    suspend fun listPlaylistItems(playlistId: Int) = repository.listPlaylistItems(playlistId)
 
     fun playPlaylistItem(playlistId: Int, position: Int) = launchOnIOThread {
         repository.playerOpenPlaylist(playlistId = playlistId, position = position)

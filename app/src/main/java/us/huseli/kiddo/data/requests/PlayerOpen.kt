@@ -1,9 +1,9 @@
 package us.huseli.kiddo.data.requests
 
 import com.google.gson.annotations.SerializedName
-import us.huseli.kiddo.data.types.PlayerPositionTime
 import us.huseli.kiddo.data.enums.PlayerRepeat
 import us.huseli.kiddo.data.requests.interfaces.IRequestStringResult
+import us.huseli.kiddo.data.types.PlayerPositionTime
 import us.huseli.retaintheme.extensions.filterValuesNotNull
 
 abstract class AbstractPlayerOpen(val options: Options? = null) : IRequestStringResult {
@@ -68,5 +68,12 @@ object PlayerOpen {
 
     class Recording(val recordingId: Int, options: Options? = null) : AbstractPlayerOpen(options) {
         override fun getItem(): Map<String, Any?> = mapOf("recordingid" to recordingId)
+    }
+
+    class PlaylistItem(
+        val item: us.huseli.kiddo.data.types.PlaylistItem,
+        options: Options? = null,
+    ) : AbstractPlayerOpen(options) {
+        override fun getItem(): Map<String, Any?> = item.getParams()
     }
 }

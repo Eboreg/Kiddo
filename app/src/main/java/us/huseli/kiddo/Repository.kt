@@ -1,6 +1,5 @@
 package us.huseli.kiddo
 
-import us.huseli.retaintheme.request.Request
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.ui.graphics.ImageBitmap
@@ -14,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -24,15 +24,18 @@ import us.huseli.kiddo.Constants.PREF_KODI_PORT
 import us.huseli.kiddo.Constants.PREF_KODI_USERNAME
 import us.huseli.kiddo.Constants.PREF_KODI_WEBSOCKET_PORT
 import us.huseli.kiddo.data.PlaylistWithItems
+import us.huseli.kiddo.data.enums.AudioFieldsAlbum
 import us.huseli.kiddo.data.enums.GlobalToggle
 import us.huseli.kiddo.data.enums.GuiWindow
 import us.huseli.kiddo.data.enums.InputAction
 import us.huseli.kiddo.data.enums.PlaylistType
+import us.huseli.kiddo.data.enums.VideoFieldsMovie
 import us.huseli.kiddo.data.notifications.Notification
 import us.huseli.kiddo.data.notifications.data.PlayerOnSeek
 import us.huseli.kiddo.data.notifications.data.PlayerOnStop
 import us.huseli.kiddo.data.requests.ApplicationSetMute
 import us.huseli.kiddo.data.requests.ApplicationSetVolume
+import us.huseli.kiddo.data.requests.AudioLibraryGetAlbums
 import us.huseli.kiddo.data.requests.GuiActivateWindow
 import us.huseli.kiddo.data.requests.GuiSetFullscreen
 import us.huseli.kiddo.data.requests.InputExecuteAction
@@ -47,10 +50,22 @@ import us.huseli.kiddo.data.requests.PlayerSetSpeed
 import us.huseli.kiddo.data.requests.PlayerSetSubtitle
 import us.huseli.kiddo.data.requests.PlayerSetTempo
 import us.huseli.kiddo.data.requests.PlayerStop
+import us.huseli.kiddo.data.requests.PlaylistAdd
+import us.huseli.kiddo.data.requests.PlaylistGetPlaylists
 import us.huseli.kiddo.data.requests.PlaylistRemove
 import us.huseli.kiddo.data.requests.PlaylistSwap
+import us.huseli.kiddo.data.requests.VideoLibraryGetMovieDetails
+import us.huseli.kiddo.data.requests.VideoLibraryGetMovies
+import us.huseli.kiddo.data.types.AudioDetailsAlbum
+import us.huseli.kiddo.data.types.ListFilterAlbums
+import us.huseli.kiddo.data.types.ListFilterMovies
+import us.huseli.kiddo.data.types.ListSort
+import us.huseli.kiddo.data.types.PlaylistItem
 import us.huseli.kiddo.data.types.VideoDetailsMovie
 import us.huseli.kiddo.data.uistates.PlayerItemUiState
+import us.huseli.retaintheme.RetainConnectionError
+import us.huseli.retaintheme.RetainHttpError
+import us.huseli.retaintheme.request.Request
 import us.huseli.retaintheme.snackbar.SnackbarEngine
 import us.huseli.retaintheme.utils.AbstractScopeHolder
 import us.huseli.retaintheme.utils.ILogger
@@ -62,7 +77,7 @@ import javax.inject.Singleton
 class Repository @Inject constructor(
     private val jsonEngine: KodiJsonRpcEngine,
     private val websocketEngine: KodiWebsocketEngine,
-    @ApplicationContext context: Context,
+    @ApplicationContext private val context: Context,
 ) : KodiNotificationListener, AbstractScopeHolder(), ILogger {
     private val preferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
@@ -80,9 +95,12 @@ class Repository @Inject constructor(
         jsonEngine.playerSpeed.filterNotNull(),
     )
     private val _playerTotalTime = merge(
-        jsonEngine.playerProperties.map { it?.totaltime?.totalMilliseconds }.filterNotNull(),
-        jsonEngine.playerTotalTime.filterNotNull(),
-        jsonEngine.playerItem.map { (it?.duration ?: it?.runtime)?.toLong()?.times(1000) }.filterNotNull(),
+        jsonEngine.playerProperties.map { it?.totaltime?.totalMilliseconds }.filterNotNull().filter { it > 0 },
+        jsonEngine.playerTotalTime.filterNotNull().filter { it > 0 },
+        jsonEngine.playerItem
+            .map { (it?.duration ?: it?.runtime)?.toLong()?.times(1000) }
+            .filterNotNull()
+            .filter { it > 0 },
     )
     private val _timestamp = MutableStateFlow<Long>(System.currentTimeMillis())
 
@@ -102,9 +120,9 @@ class Repository @Inject constructor(
     val jsonPort = jsonEngine.port
     val password = jsonEngine.password
     val playerCoverImage = jsonEngine.playerItem.map {
-        val path = it?.art?.poster?.takeIfNotEmpty()
-            ?: it?.art?.fanart?.takeIfNotEmpty()
-            ?: it?.fanart?.takeIfNotEmpty()
+        val path = it?.art?.poster?.takeIfNotBlank()
+            ?: it?.art?.fanart?.takeIfNotBlank()
+            ?: it?.fanart?.takeIfNotBlank()
 
         path?.let { getImageBitmap(path) }
     }.stateWhileSubscribed()
@@ -116,7 +134,7 @@ class Repository @Inject constructor(
     }.stateWhileSubscribed()
     val playerProgress = _playerProgress.asStateFlow()
     val playerThumbnailImage: StateFlow<ImageBitmap?> = jsonEngine.playerItem.map {
-        it?.thumbnail?.takeIfNotEmpty()?.let { path -> getImageBitmap(path) }
+        it?.thumbnail?.takeIfNotBlank()?.let { path -> getImageBitmap(path) }
     }.stateWhileSubscribed()
     val playerTotalTimeSeconds =
         _playerTotalTime.map { it.div(1000).toInt() }.distinctUntilChanged().stateWhileSubscribed()
@@ -204,6 +222,13 @@ class Repository @Inject constructor(
     suspend fun decreaseVolume() =
         jsonEngine.post(ApplicationSetVolume(type = ApplicationSetVolume.ParamType.Decrement))
 
+    suspend fun enqueueMovie(playlistId: Int, movieId: Int, title: String): String? {
+        val result = jsonEngine.post(PlaylistAdd(playlistId = playlistId, item = PlaylistItem(movieId = movieId)))
+
+        if (result == "OK") SnackbarEngine.addInfo(context.getString(R.string.x_was_enqueued, title))
+        return result
+    }
+
     suspend fun executeInputAction(action: InputAction) = jsonEngine.post(InputExecuteAction(action = action))
 
     suspend fun fetchPlaylists() = jsonEngine.fetchPlaylists()
@@ -215,16 +240,47 @@ class Repository @Inject constructor(
                 Request(url = url).getBitmap()?.asImageBitmap()
             }
         } catch (e: Throwable) {
-            SnackbarEngine.addError(message = e.toString())
+            val message =
+                if (e is RetainHttpError) "${e.url}: $e (HTTP ${e.statusCode})"
+                else if (e is RetainConnectionError) "${e.url}: $e"
+                else e.message ?: e.toString()
+
+            logError("getImageBitmap($path): $message", e)
             null
         }
     }
 
     suspend fun getMovieDetails(id: Int): VideoDetailsMovie? {
-        return _movieDetails.value[id] ?: jsonEngine.getMovieDetails(id)?.also { _movieDetails.value += id to it }
+        _movieDetails.value[id]?.also { return it }
+
+        return jsonEngine.post(
+            VideoLibraryGetMovieDetails(
+                movieId = id,
+                properties = listOf(
+                    VideoFieldsMovie.Art,
+                    VideoFieldsMovie.Cast,
+                    VideoFieldsMovie.Country,
+                    VideoFieldsMovie.Director,
+                    VideoFieldsMovie.Fanart,
+                    VideoFieldsMovie.File,
+                    VideoFieldsMovie.Genre,
+                    VideoFieldsMovie.OriginalTitle,
+                    VideoFieldsMovie.Plot,
+                    VideoFieldsMovie.PlotOutline,
+                    VideoFieldsMovie.Rating,
+                    VideoFieldsMovie.Runtime,
+                    VideoFieldsMovie.Tag,
+                    VideoFieldsMovie.Tagline,
+                    VideoFieldsMovie.Thumbnail,
+                    VideoFieldsMovie.Title,
+                    VideoFieldsMovie.Votes,
+                    VideoFieldsMovie.Year,
+                ),
+            )
+        )?.moviedetails?.also { _movieDetails.value += id to it }
     }
 
-    suspend fun getPlaylistItems(playlistId: Int) = jsonEngine.getPlaylistItems(playlistId)
+    suspend fun getPlaylists() = jsonEngine.post(PlaylistGetPlaylists())
 
     suspend fun goToNextItem() = jsonEngine.post(PlayerGoTo(playerId = _playerId.first(), to = PlayerGoTo.To.Next))
 
@@ -241,10 +297,54 @@ class Repository @Inject constructor(
     suspend fun increaseVolume() =
         jsonEngine.post(ApplicationSetVolume(type = ApplicationSetVolume.ParamType.Increment))
 
+    suspend fun listAlbums(filter: ListFilterAlbums? = null): List<AudioDetailsAlbum>? = jsonEngine.post(
+        AudioLibraryGetAlbums(
+            properties = listOf(
+                AudioFieldsAlbum.AlbumDuration,
+                AudioFieldsAlbum.Art,
+                AudioFieldsAlbum.Artist,
+                AudioFieldsAlbum.Genre,
+                AudioFieldsAlbum.Rating,
+                AudioFieldsAlbum.Title,
+                AudioFieldsAlbum.Year,
+            ),
+            filter = filter,
+            sort = ListSort(method = ListSort.Method.Title),
+        )
+    )?.albums
+
+    suspend fun listMovies(
+        simpleFilter: VideoLibraryGetMovies.SimpleFilter? = null,
+        filter: ListFilterMovies? = null,
+    ): List<VideoDetailsMovie>? =
+        jsonEngine.post(
+            VideoLibraryGetMovies(
+                properties = listOf(
+                    VideoFieldsMovie.Art,
+                    VideoFieldsMovie.Director,
+                    VideoFieldsMovie.File,
+                    VideoFieldsMovie.Genre,
+                    VideoFieldsMovie.Rating,
+                    VideoFieldsMovie.Runtime,
+                    VideoFieldsMovie.Tagline,
+                    VideoFieldsMovie.Title,
+                    VideoFieldsMovie.Year,
+                ),
+                simpleFilter = simpleFilter,
+                filter = filter,
+                sort = ListSort(method = ListSort.Method.Title),
+            )
+        )?.movies
+
+    suspend fun listPlaylistItems(playlistId: Int) = jsonEngine.listPlaylistItems(playlistId)
+
     suspend fun openSubtitleSearch() = jsonEngine.post(GuiActivateWindow(window = GuiWindow.SubtitleSearch))
 
     suspend fun playerOpenPlaylist(playlistId: Int, position: Int? = null) =
         jsonEngine.post(PlayerOpen.Playlist(playlistId = playlistId, position = position))
+
+    suspend fun playMovie(movieId: Int) =
+        jsonEngine.post(PlayerOpen.PlaylistItem(item = PlaylistItem(movieId = movieId)))
 
     suspend fun playOrPause() = jsonEngine.post(PlayerPlayPause(playerId = _playerId.first()))
 

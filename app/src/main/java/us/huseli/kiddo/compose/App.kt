@@ -15,14 +15,18 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import us.huseli.kiddo.MovieDetailsDestination
-import us.huseli.kiddo.QueueDestination
-import us.huseli.kiddo.RemoteControlDestination
-import us.huseli.kiddo.SettingsDestination
+import us.huseli.kiddo.compose.screens.AlbumListScreen
+import us.huseli.kiddo.routing.MovieDetailsRoute
+import us.huseli.kiddo.routing.MovieListDestination
+import us.huseli.kiddo.routing.QueueDestination
+import us.huseli.kiddo.routing.RemoteControlDestination
+import us.huseli.kiddo.routing.SettingsDestination
 import us.huseli.kiddo.compose.screens.MovieDetailsScreen
+import us.huseli.kiddo.compose.screens.MovieListScreen
 import us.huseli.kiddo.compose.screens.QueueScreen
 import us.huseli.kiddo.compose.screens.RemoteControlScreen
 import us.huseli.kiddo.compose.screens.SettingsScreen
+import us.huseli.kiddo.routing.AlbumListDestination
 import us.huseli.kiddo.viewmodels.AppViewModel
 import us.huseli.retaintheme.compose.SnackbarHosts
 
@@ -31,6 +35,9 @@ import us.huseli.retaintheme.compose.SnackbarHosts
 fun App(viewModel: AppViewModel = hiltViewModel()) {
     val navController: NavHostController = rememberNavController()
     val inputRequest by viewModel.inputRequest.collectAsStateWithLifecycle()
+    val onMovieDetailsClick = { movieId: Int ->
+        navController.navigate(MovieDetailsRoute(movieId = movieId))
+    }
 
     Scaffold(
         topBar = {
@@ -40,6 +47,8 @@ fun App(viewModel: AppViewModel = hiltViewModel()) {
                     RemoteControlDestination.MenuIconButton(navController)
                     QueueDestination.MenuIconButton(navController)
                     SettingsDestination.MenuIconButton(navController)
+                    MovieListDestination.MenuIconButton(navController)
+                    AlbumListDestination.MenuIconButton(navController)
                 },
             )
         },
@@ -61,11 +70,7 @@ fun App(viewModel: AppViewModel = hiltViewModel()) {
             modifier = Modifier.padding(innerPadding),
         ) {
             composable(route = RemoteControlDestination.route) {
-                RemoteControlScreen(
-                    onMovieDetailsClick = { movieId ->
-                        navController.navigate(MovieDetailsDestination.route(movieId))
-                    },
-                )
+                RemoteControlScreen(onMovieDetailsClick = onMovieDetailsClick)
             }
 
             composable(route = SettingsDestination.route) {
@@ -76,11 +81,21 @@ fun App(viewModel: AppViewModel = hiltViewModel()) {
                 QueueScreen()
             }
 
-            composable(
-                route = MovieDetailsDestination.routeTemplate,
-                arguments = MovieDetailsDestination.arguments,
-            ) {
-                MovieDetailsScreen()
+            composable<MovieListDestination.Route> {
+                MovieListScreen(onMovieDetailsClick = onMovieDetailsClick)
+            }
+
+            composable<MovieDetailsRoute> {
+                MovieDetailsScreen(
+                    onPersonClick = { navController.navigate(MovieListDestination.Route(person = it)) },
+                    onGenreClick = { navController.navigate(MovieListDestination.Route(genre = it)) },
+                    onYearClick = { navController.navigate(MovieListDestination.Route(year = it)) },
+                    onCountryClick = { navController.navigate(MovieListDestination.Route(country = it)) },
+                )
+            }
+
+            composable<AlbumListDestination.Route> {
+                AlbumListScreen()
             }
         }
     }

@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.dagger.hilt.android)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 val keystoreProperties = Properties()
@@ -111,4 +112,6 @@ dependencies {
 
     // Splashscreen:
     implementation(libs.androidx.core.splashscreen)
+
+    implementation(libs.kotlinx.serialization.json)
 }

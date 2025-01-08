@@ -5,8 +5,11 @@ import us.huseli.kiddo.AbstractListMembers
 import us.huseli.kiddo.data.types.interfaces.IListItemAll
 import us.huseli.kiddo.data.types.interfaces.IListItemBase
 import us.huseli.kiddo.data.types.interfaces.IVideoDetailsFile
+import us.huseli.kiddo.sensibleFormat
 import us.huseli.kiddo.takeIfNotEmpty
 import java.util.UUID
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
 
 @Immutable
 data class ListItemAll(
@@ -125,6 +128,14 @@ data class ListItemAll(
 
     val stringIdForced: String
         get() = stringId ?: UUID.randomUUID().toString()
+
+    val supportingContent: String?
+        get() = listOfNotNull(
+            artistString,
+            directorString,
+            runtime?.toDuration(DurationUnit.SECONDS)?.sensibleFormat(),
+            year?.toString(),
+        ).takeIfNotEmpty()?.joinToString(" · ")
 
     override fun listMemberProperties(): List<Pair<String, Any?>> {
         return super.listMemberProperties().filterNot { it.first == "customproperties" }
