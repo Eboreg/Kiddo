@@ -15,28 +15,28 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import us.huseli.kiddo.seconds
 import us.huseli.kiddo.sensibleFormat
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 @Composable
 fun PlayerTimeSlider(
     elapsedTime: State<Int?>,
     progress: State<Float>,
     totalTime: State<Int?>,
-    modifier: Modifier = Modifier.Companion,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier,
     onSeekInProgress: (Float) -> Unit,
     onSeekFinish: () -> Unit,
 ) {
     val elapsedTimeString =
-        remember(elapsedTime.value) { elapsedTime.value?.toDuration(DurationUnit.SECONDS)?.sensibleFormat() }
+        remember(elapsedTime.value) { elapsedTime.value?.seconds?.sensibleFormat() }
     val totalTimeString =
-        remember(totalTime.value) { totalTime.value?.toDuration(DurationUnit.SECONDS)?.sensibleFormat() }
+        remember(totalTime.value) { totalTime.value?.seconds?.sensibleFormat() }
 
     CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.bodySmall) {
         Row(
             modifier = modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Companion.CenterVertically,
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(elapsedTimeString ?: "", modifier = Modifier.width(50.dp), textAlign = TextAlign.Center)
@@ -45,7 +45,7 @@ fun PlayerTimeSlider(
                 onValueChange = onSeekInProgress,
                 onValueChangeFinished = onSeekFinish,
                 modifier = Modifier.weight(1f),
-                enabled = (totalTime.value ?: 0) > 0,
+                enabled = enabled && (totalTime.value ?: 0) > 0,
             )
             Text(totalTimeString ?: "", modifier = Modifier.width(50.dp), textAlign = TextAlign.Center)
         }

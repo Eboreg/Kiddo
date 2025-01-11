@@ -18,7 +18,6 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,31 +33,26 @@ import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.ReorderableLazyListState
 import us.huseli.kiddo.R
 import us.huseli.kiddo.data.enums.PlaylistType
-import us.huseli.kiddo.data.types.ListItemAll
+import us.huseli.kiddo.data.types.interfaces.IListItemAll
 import us.huseli.kiddo.takeIfNotBlank
 
 
 @Composable
 fun LazyItemScope.QueueItem(
-    entry: ListItemAll,
+    entry: IListItemAll,
     index: Int,
     isReorderable: Boolean,
     reorderableState: ReorderableLazyListState,
     playlistType: PlaylistType,
     currentItemId: String?,
+    thumbnail: ImageBitmap?,
     onRemoveClick: () -> Unit,
     onPlayClick: () -> Unit,
-    getThumbnail: suspend () -> ImageBitmap?,
 ) {
     val isPlaying = remember(entry.stringId, currentItemId) {
         currentItemId != null && currentItemId == entry.stringId
     }
-    var thumbnail by remember { mutableStateOf<ImageBitmap?>(null) }
     var isDropdownOpen by rememberSaveable(entry) { mutableStateOf(false) }
-
-    LaunchedEffect(entry.thumbnail) {
-        thumbnail = getThumbnail()
-    }
 
     ReorderableItem(
         enabled = isReorderable,

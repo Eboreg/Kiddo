@@ -1,5 +1,8 @@
 package us.huseli.kiddo.data.types.interfaces
 
+import us.huseli.kiddo.takeIfNotBlank
+import us.huseli.kiddo.takeIfNotEmpty
+
 interface IAudioDetailsMedia : IAudioDetailsBase {
     val artist: List<String>?
     val artistid: List<Int>?
@@ -13,4 +16,10 @@ interface IAudioDetailsMedia : IAudioDetailsBase {
     val userrating: Int?
     val votes: String?
     val year: Int?
+
+    val artistString: String?
+        get() = artist?.takeIfNotEmpty()?.joinToString(", ")
+
+    val displayTitle: String
+        get() = title?.takeIfNotBlank() ?: label
 }

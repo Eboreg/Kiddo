@@ -1,10 +1,10 @@
 package us.huseli.kiddo.data.types
 
-import us.huseli.kiddo.data.notifications.interfaces.IPlayerNotificationsPlayer
+import us.huseli.kiddo.data.interfaces.IHasPlayerTime
 
 data class PlayerNotificationsPlayerSeek(
-    override val playerid: Int,
-    override val speed: Int?,
+    val playerid: Int,
+    val speed: Int?,
     val seekoffset: GlobalTime?,
-    val time: GlobalTime?,
-) : IPlayerNotificationsPlayer
+    override val time: GlobalTime?,
+) : IHasPlayerTime

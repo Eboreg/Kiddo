@@ -1,8 +1,9 @@
 package us.huseli.kiddo.data.notifications.data
 
+import us.huseli.kiddo.data.interfaces.IHasPlayerSpeed
+import us.huseli.kiddo.data.interfaces.IHasPlayerId
 import us.huseli.kiddo.data.types.NotificationsItem
 import us.huseli.kiddo.data.types.PlayerNotificationsPlayer
-import us.huseli.kiddo.data.notifications.interfaces.IHasPlayer
 import us.huseli.kiddo.data.notifications.interfaces.INotificationData
 
 /**
@@ -16,5 +17,10 @@ import us.huseli.kiddo.data.notifications.interfaces.INotificationData
  */
 data class PlayerNotificationsData(
     val item: NotificationsItem,
-    override val player: PlayerNotificationsPlayer,
-) : IHasPlayer, INotificationData
+    val player: PlayerNotificationsPlayer,
+) : INotificationData, IHasPlayerSpeed, IHasPlayerId {
+    override val speed: Int?
+        get() = player.speed
+    override val playerid: Int?
+        get() = player.playerid
+}

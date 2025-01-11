@@ -19,10 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import us.huseli.kiddo.R
-import us.huseli.kiddo.data.uistates.PlayerItemUiState
+import us.huseli.kiddo.data.types.PlayerPropertyValue
 
 @Composable
-fun AudioStreamMenuButton(state: PlayerItemUiState, onSetStreamClick: (Int) -> Unit) {
+fun AudioStreamMenuButton(properties: PlayerPropertyValue?, onSetStreamClick: (Int) -> Unit) {
     var isMenuOpen by remember { mutableStateOf(false) }
 
     FilledIconButton(
@@ -40,7 +40,7 @@ fun AudioStreamMenuButton(state: PlayerItemUiState, onSetStreamClick: (Int) -> U
             enabled = false,
             colors = MenuDefaults.itemColors(disabledTextColor = MaterialTheme.colorScheme.onSurface),
         )
-        state.properties?.audiostreams?.forEach { stream ->
+        properties?.audiostreams?.forEach { stream ->
             DropdownMenuItem(
                 text = { Text(stream.displayName) },
                 onClick = {
@@ -48,7 +48,7 @@ fun AudioStreamMenuButton(state: PlayerItemUiState, onSetStreamClick: (Int) -> U
                     isMenuOpen = false
                 },
                 modifier = Modifier.background(
-                    if (stream.index == state.properties.currentaudiostream?.index)
+                    if (stream.index == properties.currentaudiostream?.index)
                         MaterialTheme.colorScheme.primaryContainer
                     else Color.Unspecified,
                 ),

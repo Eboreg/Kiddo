@@ -1,4 +1,4 @@
-package us.huseli.kiddo.compose
+package us.huseli.kiddo.compose.controls
 
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog

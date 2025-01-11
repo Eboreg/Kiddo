@@ -10,7 +10,8 @@ import javax.inject.Inject
 class RemoteControlViewModel @Inject constructor(private val repository: Repository) : AbstractBaseViewModel() {
     val connectErrors = repository.connectErrorStrings
     val playerCoverImage = repository.playerCoverImage
-    val playerItemUiState = repository.playerItemUiState
+    val playerItem = repository.playerItem
+    val playerProperties = repository.playerProperties
     val volume = repository.volume
 
     fun sendKeypress(key: String) = launchOnIOThread { repository.sendKeypress(key) }

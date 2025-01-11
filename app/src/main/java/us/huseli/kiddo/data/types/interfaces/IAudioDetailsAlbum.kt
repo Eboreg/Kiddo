@@ -1,7 +1,11 @@
 package us.huseli.kiddo.data.types.interfaces
 
+import us.huseli.kiddo.cleanDuplicates
 import us.huseli.kiddo.data.enums.AudioAlbumReleaseType
 import us.huseli.kiddo.data.types.AudioDetailsGenre
+import us.huseli.kiddo.seconds
+import us.huseli.kiddo.sensibleFormat
+import us.huseli.kiddo.takeIfNotEmpty
 
 interface IAudioDetailsAlbum : IAudioDetailsMedia {
     val albumduration: Int?
@@ -23,4 +27,15 @@ interface IAudioDetailsAlbum : IAudioDetailsMedia {
     val theme: List<String>?
     val totaldiscs: Int?
     val type: String?
+
+    val allGenres: Collection<String>
+        get() = (songgenres?.mapNotNull { it.title } ?: emptyList())
+            .plus(genre ?: emptyList())
+            .cleanDuplicates()
+
+    val supportingContent: String?
+        get() = listOfNotNull(
+            albumduration?.seconds?.sensibleFormat(),
+            year?.takeIf { it > 0 }?.toString(),
+        ).takeIfNotEmpty()?.joinToString(" · ")
 }

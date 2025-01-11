@@ -18,6 +18,8 @@ class AppViewModel @Inject constructor(private val repository: Repository) : Abs
     private val _inputRequest = MutableStateFlow<InputOnInputRequested?>(null)
 
     val inputRequest = _inputRequest.asStateFlow()
+    val currentPlayerItem = repository.playerItem
+    val playerProperties = repository.playerProperties
 
     init {
         repository.addNotificationListener(this)

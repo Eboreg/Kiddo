@@ -16,18 +16,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import us.huseli.kiddo.compose.screens.remotecontrol.ControlPanel
 import us.huseli.kiddo.compose.PlayerPanel
 import us.huseli.kiddo.compose.PlayerPanelNoMedia
+import us.huseli.kiddo.compose.screens.remotecontrol.ControlPanel
 import us.huseli.kiddo.viewmodels.RemoteControlViewModel
 
 @Composable
 fun RemoteControlScreen(
     onMovieDetailsClick: (Int) -> Unit,
+    onAlbumDetailsClick: (Int) -> Unit,
     viewModel: RemoteControlViewModel = hiltViewModel()
 ) {
     val playerCoverImage by viewModel.playerCoverImage.collectAsStateWithLifecycle()
-    val playerItemState by viewModel.playerItemUiState.collectAsStateWithLifecycle()
+    val playerItem by viewModel.playerItem.collectAsStateWithLifecycle()
+    val playerProperties by viewModel.playerProperties.collectAsStateWithLifecycle()
     val connectErrors by viewModel.connectErrors.collectAsStateWithLifecycle()
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -39,8 +41,14 @@ fun RemoteControlScreen(
             verticalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxSize()
         ) {
-            playerItemState?.also {
-                PlayerPanel(state = it, onMovieDetailsClick = onMovieDetailsClick)
+            playerItem?.also {
+                PlayerPanel(
+                    properties = playerProperties,
+                    item = it,
+                    collapsible = false,
+                    onMovieDetailsClick = onMovieDetailsClick,
+                    onAlbumDetailsClick = onAlbumDetailsClick,
+                )
             } ?: run { PlayerPanelNoMedia(errors = connectErrors) }
 
             BoxWithConstraints(modifier = Modifier.padding(horizontal = 10.dp).padding(bottom = 10.dp)) {

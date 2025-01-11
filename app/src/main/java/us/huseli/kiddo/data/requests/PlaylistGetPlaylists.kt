@@ -2,7 +2,7 @@ package us.huseli.kiddo.data.requests
 
 import com.google.gson.reflect.TypeToken
 import us.huseli.kiddo.data.enums.PlaylistType
-import us.huseli.kiddo.data.notifications.interfaces.IHasPlaylistId
+import us.huseli.kiddo.data.interfaces.IHasPlaylistId
 import us.huseli.kiddo.data.requests.interfaces.IRequestNoParams
 import us.huseli.kiddo.data.requests.interfaces.IRequestRefResult
 import java.lang.reflect.Type
@@ -14,10 +14,7 @@ class PlaylistGetPlaylists() : IRequestNoParams<List<PlaylistGetPlaylists.Result
         TypeToken.getParameterized(ArrayList::class.java, ResultItem::class.java).type
 
     data class ResultItem(
-        val playlistid: Int,
+        override val playlistid: Int,
         val type: PlaylistType,
-    ) : IHasPlaylistId {
-        override val playlistId: Int
-            get() = playlistid
-    }
+    ) : IHasPlaylistId
 }

@@ -11,7 +11,7 @@ import us.huseli.kiddo.takeIfNotEmpty
 import java.lang.reflect.Type
 
 class AudioLibraryGetAlbums(
-    val properties: List<AudioFieldsAlbum>,
+    val properties: List<AudioFieldsAlbum>?,
     val limits: ListLimits? = null,
     val sort: ListSort? = null,
     val filter: ListFilterAlbums? = null,

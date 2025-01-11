@@ -7,12 +7,12 @@ import java.lang.reflect.Type
 
 class VideoLibraryGetMovieDetails(
     val movieId: Int,
-    val properties: List<VideoFieldsMovie>,
+    val properties: List<VideoFieldsMovie> = emptyList(),
 ) : IRequestRefResult<VideoLibraryGetMovieDetails.Result> {
     override val typeOfResult: Type = Result::class.java
     override val method: String = "VideoLibrary.GetMovieDetails"
 
     override fun getParams(): Map<String, Any?> = mapOf("movieid" to movieId, "properties" to properties)
 
-    data class Result(val moviedetails: VideoDetailsMovie)
+    data class Result(val moviedetails: VideoDetailsMovie?)
 }

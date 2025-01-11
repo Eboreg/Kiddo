@@ -2,7 +2,7 @@ package us.huseli.kiddo.data.requests
 
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
-import us.huseli.kiddo.data.notifications.interfaces.IHasPlayerId
+import us.huseli.kiddo.data.interfaces.IHasPlayerId
 import us.huseli.kiddo.data.requests.interfaces.IRequestNoParams
 import us.huseli.kiddo.data.requests.interfaces.IRequestRefResult
 import java.lang.reflect.Type

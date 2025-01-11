@@ -1,6 +1,10 @@
 package us.huseli.kiddo.data.types.interfaces
 
 import com.google.gson.annotations.SerializedName
+import us.huseli.kiddo.seconds
+import us.huseli.kiddo.sensibleFormat
+import us.huseli.kiddo.takeIfNotEmpty
+import java.util.UUID
 
 interface IListItemAll : IListItemBase {
     val channel: String?
@@ -17,4 +21,21 @@ interface IListItemAll : IListItemBase {
         @SerializedName("radio") Radio,
         @SerializedName("tv") Tv,
     }
+
+    val stringId: String?
+        get() = id?.toString()
+            ?: file?.takeIfNotEmpty()
+            ?: (customproperties?.get("video_id") as? String)?.takeIfNotEmpty()
+            ?: (customproperties?.get("original_listitem_url") as? String)?.takeIfNotEmpty()
+
+    val stringIdForced: String
+        get() = stringId ?: UUID.randomUUID().toString()
+
+    val supportingContent: String?
+        get() = listOfNotNull(
+            artistString,
+            directorString,
+            runtime?.seconds?.sensibleFormat(),
+            year?.takeIf { it > 0 }?.toString(),
+        ).takeIfNotEmpty()?.joinToString(" · ")
 }

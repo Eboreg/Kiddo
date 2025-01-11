@@ -1,9 +1,14 @@
 package us.huseli.kiddo.data.types.interfaces
 
+import us.huseli.kiddo.data.types.VideoCast
 import us.huseli.kiddo.data.types.VideoRating
+import us.huseli.kiddo.seconds
+import us.huseli.kiddo.sensibleFormat
+import us.huseli.kiddo.takeIfNotBlank
+import us.huseli.kiddo.takeIfNotEmpty
 
 interface IVideoDetailsMovie : IVideoDetailsFile {
-    val cast: List<IListItemBase.VideoCast>?
+    val cast: List<VideoCast>?
     val country: List<String>?
     val genre: List<String>?
     val imdbnumber: String?
@@ -28,4 +33,13 @@ interface IVideoDetailsMovie : IVideoDetailsFile {
     val votes: String?
     val writer: List<String>?
     val year: Int?
+
+    val displayTitle: String
+        get() = title?.takeIfNotBlank() ?: label
+
+    val supportingContent: String?
+        get() = listOfNotNull(
+            runtime?.seconds?.sensibleFormat(withSeconds = false),
+            year?.takeIf { it > 0 }?.toString(),
+        ).takeIfNotEmpty()?.joinToString(" · ")
 }

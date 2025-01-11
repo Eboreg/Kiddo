@@ -3,13 +3,11 @@ package us.huseli.kiddo.viewmodels
 import dagger.hilt.android.lifecycle.HiltViewModel
 import us.huseli.kiddo.Repository
 import us.huseli.retaintheme.extensions.launchOnIOThread
-import us.huseli.retaintheme.extensions.launchOnMainThread
 import us.huseli.retaintheme.utils.AbstractBaseViewModel
 import javax.inject.Inject
 
 @HiltViewModel
 class PlayerPanelViewModel @Inject constructor(private val repository: Repository) : AbstractBaseViewModel() {
-    val isFullscreen = repository.isFullscreen
     val isMuted = repository.isMuted
     val isPlaying = repository.isPlaying
     val playerElapsedTime = repository.playerElapsedTimeSeconds
@@ -17,6 +15,8 @@ class PlayerPanelViewModel @Inject constructor(private val repository: Repositor
     val playerThumbnail = repository.playerThumbnailImage
     val playerTotalTime = repository.playerTotalTimeSeconds
     val volume = repository.volume
+
+    fun cycleRepeat() = launchOnIOThread { repository.cycleRepeat() }
 
     fun decreasePlayerSpeed() = launchOnIOThread { repository.decreasePlayerSpeed() }
 
@@ -32,19 +32,22 @@ class PlayerPanelViewModel @Inject constructor(private val repository: Repositor
 
     fun playOrPause() = launchOnIOThread { repository.playOrPause() }
 
-    fun seekFinish(progress: Float) = launchOnMainThread { repository.seekFinish(progress) }
+    fun seekFinish(progress: Float) = repository.seekFinish(progress)
 
-    fun seekInProgress(progress: Float) = launchOnMainThread { repository.seekInProgress(progress) }
+    fun seekInProgress(progress: Float) = repository.seekInProgress(progress)
 
     fun setAudioStream(index: Int) = launchOnIOThread { repository.setAudioStream(index) }
+
+    fun setFullscreen() = launchOnIOThread { repository.setFullscreen() }
 
     fun setMute(value: Boolean) = launchOnIOThread { repository.setMute(value) }
 
     fun setSubtitle(index: Int) = launchOnIOThread { repository.setSubtitle(index) }
 
-    fun setVolume(value: Int) = launchOnIOThread { repository.setVolume(value) }
+    fun setVolume(value: Int, rateLimited: Boolean = false) =
+        launchOnIOThread { repository.setVolume(value, rateLimited) }
 
     fun stop() = launchOnIOThread { repository.stop() }
 
-    fun toggleFullscreen() = launchOnIOThread { repository.toggleFullscreen() }
+    fun toggleShuffle() = launchOnIOThread { repository.toggleShuffle() }
 }

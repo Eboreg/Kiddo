@@ -2,14 +2,10 @@ package us.huseli.kiddo.data.types
 
 import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.AbstractListMembers
+import us.huseli.kiddo.data.enums.AudioAlbumReleaseType
 import us.huseli.kiddo.data.types.interfaces.IListItemAll
 import us.huseli.kiddo.data.types.interfaces.IListItemBase
 import us.huseli.kiddo.data.types.interfaces.IVideoDetailsFile
-import us.huseli.kiddo.sensibleFormat
-import us.huseli.kiddo.takeIfNotEmpty
-import java.util.UUID
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 @Immutable
 data class ListItemAll(
@@ -18,23 +14,23 @@ data class ListItemAll(
     override val albumartistid: List<Int>?,
     override val albumid: Int?,
     override val albumlabel: String?,
-    override val albumreleasetype: IListItemBase.AudioAlbumReleaseType?,
+    override val albumreleasetype: AudioAlbumReleaseType?,
     override val albumstatus: String?,
     override val art: MediaArtwork?,
     override val artist: List<String>?,
     override val artistid: List<Int>?,
     override val bitrate: Int?,
     override val bpm: Int?,
-    override val cast: List<IListItemBase.VideoCast>?,
+    override val cast: List<VideoCast>?,
     override val channel: String?,
     override val channelnumber: Int?,
     override val channels: Int?,
     override val channeltype: IListItemAll.PVRChannelType?,
     override val comment: String?,
     override val compilation: Boolean?,
-    override val contributors: List<IListItemBase.AudioContributor>?,
+    override val contributors: List<AudioContributor>?,
     override val country: List<String>?,
-    override val customproperties: Map<String, String>?,
+    override val customproperties: Map<String, Any>?,
     override val dateadded: String?,
     override val description: String?,
     override val director: List<String>?,
@@ -77,7 +73,7 @@ data class ListItemAll(
     override val productioncode: String?,
     override val rating: Double?,
     override val releasedate: String?,
-    override val releasetype: IListItemBase.AudioAlbumReleaseType?,
+    override val releasetype: AudioAlbumReleaseType?,
     override val resume: IVideoDetailsFile.VideoResume?,
     override val runtime: Int?,
     override val samplerate: Int?,
@@ -92,7 +88,7 @@ data class ListItemAll(
     override val specialsortepisode: Int?,
     override val specialsortseason: Int?,
     override val starttime: String?,
-    override val streamdetails: IVideoDetailsFile.VideoStreams?,
+    override val streamdetails: VideoStreams?,
     override val studio: List<String>?,
     override val style: List<String>?,
     override val subchannelnumber: Int?,
@@ -114,29 +110,6 @@ data class ListItemAll(
     override val writer: List<String>?,
     override val year: Int?,
 ) : IListItemAll, AbstractListMembers() {
-    val artistString: String?
-        get() = artist?.takeIfNotEmpty()?.joinToString(", ")
-
-    val directorString: String?
-        get() = director?.takeIfNotEmpty()?.joinToString(", ")
-
-    val stringId: String?
-        get() = id?.toString()
-            ?: file?.takeIfNotEmpty()
-            ?: customproperties?.get("video_id")?.takeIfNotEmpty()
-            ?: customproperties?.get("original_listitem_url")?.takeIfNotEmpty()
-
-    val stringIdForced: String
-        get() = stringId ?: UUID.randomUUID().toString()
-
-    val supportingContent: String?
-        get() = listOfNotNull(
-            artistString,
-            directorString,
-            runtime?.toDuration(DurationUnit.SECONDS)?.sensibleFormat(),
-            year?.toString(),
-        ).takeIfNotEmpty()?.joinToString(" · ")
-
     override fun listMemberProperties(): List<Pair<String, Any?>> {
         return super.listMemberProperties().filterNot { it.first == "customproperties" }
     }

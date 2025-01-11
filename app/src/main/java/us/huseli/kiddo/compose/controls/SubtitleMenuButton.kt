@@ -20,11 +20,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import us.huseli.kiddo.R
-import us.huseli.kiddo.data.uistates.PlayerItemUiState
+import us.huseli.kiddo.data.types.PlayerPropertyValue
 
 @Composable
 fun SubtitleMenuButton(
-    state: PlayerItemUiState,
+    properties: PlayerPropertyValue?,
     onDisableSubtitleClick: () -> Unit,
     onSetSubtitleClick: (Int) -> Unit,
     onSubtitleSearchClick: () -> Unit,
@@ -33,7 +33,7 @@ fun SubtitleMenuButton(
 
     FilledIconButton(
         onClick = { isMenuOpen = true },
-        colors = if (state.subtitleEnabled) IconButtonDefaults.filledIconButtonColors()
+        colors = if (properties?.subtitleenabled == true) IconButtonDefaults.filledIconButtonColors()
         else IconButtonDefaults.filledIconButtonColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             contentColor = MaterialTheme.colorScheme.primary,
@@ -67,11 +67,11 @@ fun SubtitleMenuButton(
                 isMenuOpen = false
             },
             modifier = Modifier.background(
-                if (!state.subtitleEnabled) MaterialTheme.colorScheme.primaryContainer
+                if (properties?.subtitleenabled == false) MaterialTheme.colorScheme.primaryContainer
                 else Color.Unspecified,
             ),
         )
-        state.properties?.subtitles?.forEach { subtitle ->
+        properties?.subtitles?.forEach { subtitle ->
             DropdownMenuItem(
                 text = { Text(subtitle.displayName) },
                 onClick = {
@@ -79,7 +79,7 @@ fun SubtitleMenuButton(
                     isMenuOpen = false
                 },
                 modifier = Modifier.background(
-                    if (subtitle.index == state.properties.currentsubtitle?.index && state.subtitleEnabled)
+                    if (subtitle.index == properties.currentsubtitle?.index && properties.subtitleenabled == true)
                         MaterialTheme.colorScheme.primaryContainer
                     else Color.Unspecified,
                 ),

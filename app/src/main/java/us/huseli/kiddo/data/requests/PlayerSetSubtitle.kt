@@ -1,14 +1,13 @@
 package us.huseli.kiddo.data.requests
 
-import us.huseli.kiddo.data.requests.interfaces.IRequestHasPlayerId
 import us.huseli.kiddo.data.requests.interfaces.IRequestStringResult
 
 class PlayerSetSubtitle(
-    override val playerId: Int,
+    val playerId: Int,
     val subtitle: Subtitle = Subtitle.Absolute,
     val subtitleIndex: Int? = null,
     val enable: Boolean? = null,
-) : IRequestStringResult, IRequestHasPlayerId {
+) : IRequestStringResult {
     override val method: String = "Player.SetSubtitle"
 
     override fun getParams(): Map<String, Any?> {

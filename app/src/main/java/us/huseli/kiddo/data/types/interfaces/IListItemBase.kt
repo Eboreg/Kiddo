@@ -1,8 +1,13 @@
 package us.huseli.kiddo.data.types.interfaces
 
 import com.google.gson.annotations.SerializedName
+import us.huseli.kiddo.data.enums.AudioAlbumReleaseType
+import us.huseli.kiddo.data.interfaces.IHasPlayerTotalTime
+import us.huseli.kiddo.data.types.AudioContributor
+import us.huseli.kiddo.data.types.GlobalTime
+import us.huseli.kiddo.data.types.VideoCast
 
-interface IListItemBase : IVideoDetailsFile, IAudioDetailsMedia {
+interface IListItemBase : IVideoDetailsFile, IAudioDetailsMedia, IHasPlayerTotalTime {
     val album: String?
     val albumartist: List<String>?
     val albumartistid: List<Int>?
@@ -18,7 +23,7 @@ interface IListItemBase : IVideoDetailsFile, IAudioDetailsMedia {
     val compilation: Boolean?
     val contributors: List<AudioContributor>?
     val country: List<String>?
-    val customproperties: Map<String, String>?
+    val customproperties: Map<String, Any>?
     val description: String?
     val disc: Int?
     val disctitle: String?
@@ -85,23 +90,13 @@ interface IListItemBase : IVideoDetailsFile, IAudioDetailsMedia {
         @SerializedName("unknown") Unknown,
     }
 
-    @Suppress("unused")
-    enum class AudioAlbumReleaseType {
-        @SerializedName("album") Album,
-        @SerializedName("single") Single,
-    }
-
-    data class VideoCast(
-        val name: String,
-        val order: Int,
-        val role: String,
-        val thumbnail: String?,
-    )
-
-    data class AudioContributor(
-        val artistid: Int,
-        val name: String,
-        val role: String,
-        val roleid: String,
-    )
+    override val totaltime: GlobalTime?
+        get() = (duration ?: runtime)?.let { seconds ->
+            GlobalTime(
+                hours = seconds / 60 / 60,
+                milliseconds = 0,
+                minutes = seconds / 60 % 60,
+                seconds = seconds % 60,
+            )
+        }
 }

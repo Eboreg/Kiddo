@@ -1,15 +1,14 @@
 package us.huseli.kiddo.data.requests
 
-import us.huseli.kiddo.data.requests.interfaces.IRequestHasPlayerId
 import us.huseli.kiddo.data.requests.interfaces.IRequestRefResult
 import us.huseli.kiddo.data.types.PlayerSpeed
 import java.lang.reflect.Type
 
 class PlayerSetSpeed(
-    override val playerId: Int,
+    val playerId: Int,
     val type: ParamType,
     val speed: Int? = null,
-) : IRequestRefResult<PlayerSpeed>, IRequestHasPlayerId {
+) : IRequestRefResult<PlayerSpeed> {
     private val validSpeeds = listOf(-32, -16, -8, -4, -2, -1, 0, 1, 2, 4, 8, 16, 32)
     override val typeOfResult: Type = PlayerSpeed::class.java
     override val method: String = "Player.SetSpeed"

@@ -1,8 +1,8 @@
 package us.huseli.kiddo.data.types.interfaces
 
-interface IListFilter<T : IListFilter<T, Rule>, Rule : IListFilterRule<*>> {
-    val and: List<T>?
-    val or: List<T>?
+interface IListFilter<Self : IListFilter<Self, Rule>, Rule : IListFilterRule<*>> {
+    val and: Collection<Self>?
+    val or: Collection<Self>?
     val rule: Rule?
 
     fun getParams(): Map<String, Any> {

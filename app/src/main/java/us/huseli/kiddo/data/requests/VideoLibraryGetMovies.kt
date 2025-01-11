@@ -22,9 +22,7 @@ class VideoLibraryGetMovies(
     override val method: String = "VideoLibrary.GetMovies"
 
     override fun getParams(): Map<String, Any?> {
-        val filterMap = filter?.getParams()
-        val simpleFilterMap = simpleFilter?.getParams()
-        val combinedFilterMap = listOfNotNull(filterMap, simpleFilterMap)
+        val filterMap = listOfNotNull(filter?.getParams(), simpleFilter?.getParams())
             .takeIfNotEmpty()
             ?.reduce { acc, m -> acc + m }
             ?.takeIfNotEmpty()
@@ -33,32 +31,32 @@ class VideoLibraryGetMovies(
             "properties" to properties,
             "limits" to limits,
             "sort" to sort,
-            "filter" to combinedFilterMap,
+            "filter" to filterMap,
         )
     }
 
     /* N.B.: Using simple filter for director did not work at all 2025-01-08 (JSONRPC v13.5.0). */
     data class SimpleFilter(
-        val genreid: Int? = null,
+        val genreId: Int? = null,
         val genre: String? = null,
         val year: Int? = null,
         val actor: String? = null,
         val director: String? = null,
         val studio: String? = null,
         val country: String? = null,
-        val setid: Int? = null,
+        val setId: Int? = null,
         val set: String? = null,
         val tag: String? = null,
     ) {
         fun getParams(): Map<String, Any> {
             return mapOf(
-                "genreid" to genreid,
+                "genreid" to genreId,
                 "genre" to genre,
                 "year" to year,
                 "actor" to actor,
                 "director" to director,
                 "country" to country,
-                "setid" to setid,
+                "setid" to setId,
                 "set" to set,
                 "tag" to tag,
             ).filterValuesNotNull()

@@ -1,15 +1,16 @@
 package us.huseli.kiddo.data.requests
 
 import com.google.gson.annotations.SerializedName
-import us.huseli.kiddo.data.requests.interfaces.IRequestHasPlayerId
-import us.huseli.kiddo.data.types.GlobalTime
+import us.huseli.kiddo.data.interfaces.IHasPlayerTime
+import us.huseli.kiddo.data.interfaces.IHasPlayerTotalTime
 import us.huseli.kiddo.data.requests.interfaces.IRequestRefResult
+import us.huseli.kiddo.data.types.GlobalTime
 import java.lang.reflect.Type
 
 class PlayerSeek(
-    override val playerId: Int,
+    val playerId: Int,
     val value: Value,
-) : IRequestRefResult<PlayerSeek.Result>, IRequestHasPlayerId {
+) : IRequestRefResult<PlayerSeek.Result> {
     override val method: String = "Player.Seek"
     override val typeOfResult: Type = Result::class.java
 
@@ -23,9 +24,9 @@ class PlayerSeek(
 
     data class Result(
         val percentage: Double?,
-        val time: GlobalTime?,
-        val totaltime: GlobalTime?,
-    )
+        override val time: GlobalTime?,
+        override val totaltime: GlobalTime?,
+    ) : IHasPlayerTotalTime, IHasPlayerTime
 
     @Suppress("unused")
     enum class Step {

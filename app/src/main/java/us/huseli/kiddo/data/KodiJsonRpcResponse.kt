@@ -14,3 +14,6 @@ data class KodiJsonRpcResponse<Result>(
     val isError: Boolean
         get() = error != null
 }
+
+val Iterable<KodiJsonRpcResponse<*>>.isError: Boolean
+    get() = any { it.error != null }

@@ -22,9 +22,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
@@ -34,19 +34,21 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import us.huseli.kiddo.R
-import us.huseli.kiddo.data.types.interfaces.IListItemBase
+import us.huseli.kiddo.data.types.VideoCast
 import us.huseli.kiddo.randomBasicColor
+import us.huseli.kiddo.routing.Routes
 import us.huseli.kiddo.takeIfNotBlank
 import us.huseli.kiddo.viewmodels.MovieDetailsViewModel
 
 @Suppress("FunctionName")
 fun LazyGridScope.MovieDetailsCast(
-    cast: List<IListItemBase.VideoCast>,
+    cast: List<VideoCast>,
     headlineStyle: TextStyle,
     viewModel: MovieDetailsViewModel,
     modifier: Modifier = Modifier,
     memberModifier: Modifier = Modifier,
-    onPersonClick: (String) -> Unit,
+    onMovieListClick: (Routes.MovieList) -> Unit,
+    // onMovieListClick: (MovieListDestination.Route) -> Unit,
 ) {
     item(span = { GridItemSpan(maxLineSpan) }) {
         Text(stringResource(R.string.cast), style = headlineStyle, modifier = modifier)
@@ -57,11 +59,14 @@ fun LazyGridScope.MovieDetailsCast(
         val background = randomBasicColor()
 
         LaunchedEffect(member.thumbnail) {
-            portrait = member.thumbnail?.takeIfNotBlank()?.let { viewModel.getImageBitmap(it) }
+            portrait = member.thumbnail?.takeIfNotBlank()?.let { viewModel.getActorPortrait(it) }
         }
 
         Card(
-            modifier = memberModifier.clickable { onPersonClick(member.name) },
+            modifier = memberModifier.clickable {
+                onMovieListClick(Routes.MovieList(person = member.name))
+                // onMovieListClick(MovieListDestination.Route(person = member.name))
+            },
             shape = MaterialTheme.shapes.extraSmall,
             colors = CardDefaults.cardColors(containerColor = background),
         ) {

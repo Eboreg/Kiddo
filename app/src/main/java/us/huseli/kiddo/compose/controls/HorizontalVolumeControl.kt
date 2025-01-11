@@ -7,10 +7,12 @@ import androidx.compose.material.icons.automirrored.sharp.VolumeOff
 import androidx.compose.material3.FilledIconToggleButton
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -23,9 +25,15 @@ fun HorizontalVolumeControl(
     isMuted: Boolean,
     onIsMutedChange: (Boolean) -> Unit,
     onVolumeChange: (Int) -> Unit,
+    onIntermittentVolumeChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var mutableVolume by rememberSaveable(volume) { mutableFloatStateOf(volume?.toFloat() ?: 0f) }
+    var mutableVolume by remember { mutableFloatStateOf(volume?.toFloat() ?: 0f) }
+    var isChanging by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isChanging, volume) {
+        if (!isChanging) mutableVolume = volume?.toFloat() ?: 0f
+    }
 
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -33,8 +41,15 @@ fun HorizontalVolumeControl(
     ) {
         NiceSlider(
             value = mutableVolume,
-            onValueChange = { mutableVolume = it },
-            onValueChangeFinished = { onVolumeChange(mutableVolume.roundToInt()) },
+            onValueChange = {
+                isChanging = true
+                mutableVolume = it
+                onIntermittentVolumeChange(it.roundToInt())
+            },
+            onValueChangeFinished = {
+                isChanging = false
+                onVolumeChange(mutableVolume.roundToInt())
+            },
             modifier = Modifier.weight(1f),
             valueRange = 0f..100f,
             enabled = !isMuted,

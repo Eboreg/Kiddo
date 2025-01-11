@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.notifications
 
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializationContext
@@ -8,10 +9,12 @@ import com.google.gson.JsonElement
 import us.huseli.kiddo.data.notifications.data.ApplicationOnVolumeChanged
 import us.huseli.kiddo.data.notifications.data.InputOnInputRequested
 import us.huseli.kiddo.data.notifications.data.PlayerNotificationsData
+import us.huseli.kiddo.data.notifications.data.PlayerOnPropertyChanged
 import us.huseli.kiddo.data.notifications.data.PlayerOnSeek
 import us.huseli.kiddo.data.notifications.data.PlayerOnStop
 import us.huseli.kiddo.data.notifications.data.PlaylistOnAdd
 import us.huseli.kiddo.data.notifications.data.PlaylistOnClear
+import us.huseli.kiddo.data.notifications.data.PlaylistOnRemove
 import us.huseli.kiddo.data.notifications.interfaces.INotificationData
 import us.huseli.retaintheme.utils.ILogger
 import java.lang.reflect.Type
@@ -27,17 +30,19 @@ data class Notification<Data>(
             return takeIf { it.isJsonObject }?.asJsonObject?.let { obj ->
                 val dataClass = when (method) {
                     "Application.OnVolumeChanged" -> ApplicationOnVolumeChanged::class.java
+                    "Input.OnInputRequested" -> InputOnInputRequested::class.java
                     "Player.OnAVChange" -> PlayerNotificationsData::class.java
                     "Player.OnAVStart" -> PlayerNotificationsData::class.java
                     "Player.OnPause" -> PlayerNotificationsData::class.java
                     "Player.OnPlay" -> PlayerNotificationsData::class.java
+                    "Player.OnPropertyChanged" -> PlayerOnPropertyChanged::class.java
                     "Player.OnResume" -> PlayerNotificationsData::class.java
                     "Player.OnSeek" -> PlayerOnSeek::class.java
                     "Player.OnSpeedChanged" -> PlayerNotificationsData::class.java
                     "Player.OnStop" -> PlayerOnStop::class.java
                     "Playlist.OnAdd" -> PlaylistOnAdd::class.java
+                    "Playlist.OnRemove" -> PlaylistOnRemove::class.java
                     "Playlist.OnClear" -> PlaylistOnClear::class.java
-                    "Input.OnInputRequested" -> InputOnInputRequested::class.java
                     else -> null
                 }
 
@@ -73,7 +78,7 @@ data class Notification<Data>(
             try {
                 val notification = gson.fromJson(json, Notification::class.java)
 
-                log("Notification", "fromJson: json=$json")
+                log("Notification", "fromJson: json=$json", priority = Log.DEBUG)
                 log("Notification", "fromJson: notification=$notification")
                 return notification
             } catch (e: Throwable) {

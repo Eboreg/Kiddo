@@ -1,4 +1,4 @@
-package us.huseli.kiddo.compose.screens.moviedetails
+package us.huseli.kiddo.compose
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -26,19 +27,21 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import us.huseli.kiddo.R
-import us.huseli.kiddo.compose.RatingStars
-import us.huseli.kiddo.data.types.VideoDetailsMovie
 
 @Composable
-fun MovieDetailsBanner(
-    details: VideoDetailsMovie,
+fun MediaDetailsBanner(
+    title: String,
     headlineStyle: TextStyle,
-    banner: ImageBitmap?,
-    poster: ImageBitmap?,
+    thumbnailWidth: Dp,
+    subTitle: String? = null,
+    rating: Double? = null,
+    banner: ImageBitmap? = null,
+    thumbnail: ImageBitmap? = null,
+    votes: String? = null,
     onPlayClick: () -> Unit,
     onEnqueueClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -61,16 +64,17 @@ fun MovieDetailsBanner(
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(modifier = Modifier.width(100.dp)) {
-                poster?.also {
+            Box(modifier = Modifier.width(thumbnailWidth)) {
+                thumbnail?.also {
                     Image(
                         bitmap = it,
-                        modifier = Modifier.shadow(5.dp),
+                        modifier = Modifier.shadow(5.dp).fillMaxWidth(),
                         contentScale = ContentScale.FillWidth,
                         contentDescription = null,
                     )
                 }
             }
+
             Card(
                 shape = MaterialTheme.shapes.extraSmall,
                 colors = CardDefaults.cardColors(
@@ -86,17 +90,16 @@ fun MovieDetailsBanner(
                         .padding(10.dp),
                     verticalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text(details.displayTitle, style = headlineStyle)
-                    details.tagline?.also {
-                        Text(text = it, maxLines = 2, overflow = TextOverflow.Ellipsis, fontStyle = FontStyle.Italic)
-                    }
+                    Text(title, style = headlineStyle, maxLines = 2, overflow = TextOverflow.Ellipsis)
 
-                    details.rating?.takeIf { it > 0.0 }?.also { rating ->
-                        Column {
+                    Column { subTitle?.also { Text(text = it, maxLines = 2, overflow = TextOverflow.Ellipsis) } }
+
+                    Column {
+                        rating?.takeIf { it > 0.0 }?.also { rating ->
                             RatingStars(rating)
-                            details.votes?.also {
+                            votes?.also {
                                 Text(
-                                    text = stringResource(R.string.x_votes, details.votes),
+                                    text = stringResource(R.string.x_votes, it),
                                     style = MaterialTheme.typography.bodySmall,
                                 )
                             }

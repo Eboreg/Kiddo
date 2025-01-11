@@ -1,10 +1,12 @@
 package us.huseli.kiddo.data.requests.interfaces
 
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import us.huseli.kiddo.data.KodiJsonRpcResponse
 import us.huseli.kiddo.data.enums.GlobalToggle
+import us.huseli.kiddo.data.isError
 import us.huseli.retaintheme.request.Request
 import us.huseli.retaintheme.utils.ILogger
 
@@ -31,16 +33,17 @@ interface IRequest<Result> : ILogger {
         )
         val responseJson = Request.postJson(url = url, json = json, gson = gson, headers = headers).getString()
 
+        log("responseJson: $responseJson", priority = Log.DEBUG)
+
         return try {
             gson.fromJson<List<KodiJsonRpcResponse<Result>>>(responseJson, responseListType)
                 .map { it.copy(method = method, request = this) }
                 .also { response ->
-                    log("post: method=$method, params=$params")
-                    if (response.any { it.error != null } == true) logError(message = "post: response=$response")
-                    else log("post: response=$response")
+                    log("method=$method, requestId=$requestId, params=$params")
+                    log("response=$response", priority = if (response.isError) Log.ERROR else Log.DEBUG)
                 }
         } catch (e: Throwable) {
-            logError("post: responseJson=$responseJson", e)
+            logError("responseJson=$responseJson", e)
             throw e
         }
     }
