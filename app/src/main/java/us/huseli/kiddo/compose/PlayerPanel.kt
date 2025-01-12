@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ImageNotSupported
 import androidx.compose.material.icons.sharp.Fullscreen
@@ -52,6 +53,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import us.huseli.kiddo.R
@@ -119,16 +121,11 @@ fun PlayerPanel(
     val columnPadding by remember { derivedStateOf { 10.dp * expandProgress } }
     val thumbnailHeight by remember { derivedStateOf { 70.dp + (30.dp * expandProgress) } }
     val expandedContentAlpha by remember { derivedStateOf { sqrt(expandProgress) } }
+    val imageCornerRadius by remember { derivedStateOf { 4.dp * expandProgress } }
 
     LaunchedEffect(Unit) {
-        snapshotFlow { draggableState.settledValue }.collect {
-            if (it == PanelCollapseStatus.Collapsed) isCollapsed = true
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        snapshotFlow { draggableState.targetValue }.collect {
-            if (it == PanelCollapseStatus.Expanded) isCollapsed = false
+        snapshotFlow { expandProgress }.collect {
+            isCollapsed = it <= 0.1f
         }
     }
 
@@ -165,7 +162,7 @@ fun PlayerPanel(
                         .aspectRatio(1f)
                 ) {
                     Surface(
-                        shape = if (isCollapsed) RectangleShape else MaterialTheme.shapes.extraSmall,
+                        shape = RoundedCornerShape(imageCornerRadius),
                         color = Color.Transparent,
                     ) {
                         thumbnail?.also {
@@ -189,24 +186,42 @@ fun PlayerPanel(
                 }
 
                 Column(
-                    verticalArrangement = Arrangement.SpaceEvenly, modifier = Modifier
+                    verticalArrangement = if (isCollapsed) Arrangement.SpaceEvenly else Arrangement.spacedBy(5.dp),
+                    modifier = Modifier
                         .fillMaxHeight()
+                        .padding(vertical = 5.dp)
                         .weight(1f)
                 ) {
                     Text(
-                        item.displayTitle,
+                        text = item.displayTitle,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = if (isCollapsed) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.titleMedium,
+                        lineHeight = 20.sp,
                     )
 
-                    if (item.type == IListItemBase.ItemType.Movie) {
-                        item.directorString?.also { Text(it, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-                        if (!isCollapsed) item.year?.takeIf { it > 0 }?.toString()?.also { Text(it) }
-                    } else if (item.type == IListItemBase.ItemType.Song) {
-                        item.artistString?.also { Text(it, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-                        if (!isCollapsed) item.album?.takeIfNotBlank()
-                            ?.also { Text(it, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                    val line2 =
+                        if (item.type == IListItemBase.ItemType.Movie) item.directorString else item.artistString
+                    val line3 =
+                        if (item.type == IListItemBase.ItemType.Movie)
+                            item.year?.takeIf { it > 0 }?.toString()
+                        else item.album
+
+                    line2?.takeIfNotBlank()?.also {
+                        Text(
+                            text = it,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = if (isCollapsed) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                    if (!isCollapsed) line3?.takeIfNotBlank()?.also {
+                        Text(
+                            text = it,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
                     }
                 }
 

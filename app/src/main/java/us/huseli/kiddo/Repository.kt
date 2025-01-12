@@ -6,11 +6,9 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -20,41 +18,25 @@ import us.huseli.kiddo.Constants.PREF_KODI_PASSWORD
 import us.huseli.kiddo.Constants.PREF_KODI_PORT
 import us.huseli.kiddo.Constants.PREF_KODI_USERNAME
 import us.huseli.kiddo.Constants.PREF_KODI_WEBSOCKET_PORT
-import us.huseli.kiddo.data.AbstractRequest
-import us.huseli.kiddo.data.enums.ApplicationPropertyName
 import us.huseli.kiddo.data.enums.AudioFieldsAlbum
 import us.huseli.kiddo.data.enums.AudioFieldsSong
 import us.huseli.kiddo.data.enums.GlobalToggle
-import us.huseli.kiddo.data.enums.GuiPropertyName
 import us.huseli.kiddo.data.enums.GuiWindow
 import us.huseli.kiddo.data.enums.InputAction
 import us.huseli.kiddo.data.enums.ListFieldsAll
-import us.huseli.kiddo.data.enums.PlayerPropertyName
 import us.huseli.kiddo.data.enums.PlaylistType
 import us.huseli.kiddo.data.enums.VideoFieldsMovie
-import us.huseli.kiddo.data.interfaces.IHasPlayerId
-import us.huseli.kiddo.data.interfaces.IHasPlayerSpeed
-import us.huseli.kiddo.data.interfaces.IHasPlayerTime
-import us.huseli.kiddo.data.interfaces.IHasPlayerTotalTime
-import us.huseli.kiddo.data.notifications.Notification
-import us.huseli.kiddo.data.notifications.data.ApplicationOnVolumeChanged
-import us.huseli.kiddo.data.notifications.data.PlayerOnPropertyChanged
-import us.huseli.kiddo.data.requests.ApplicationGetProperties
 import us.huseli.kiddo.data.requests.ApplicationSetMute
 import us.huseli.kiddo.data.requests.ApplicationSetVolume
 import us.huseli.kiddo.data.requests.AudioLibraryGetAlbumDetails
 import us.huseli.kiddo.data.requests.AudioLibraryGetAlbums
 import us.huseli.kiddo.data.requests.AudioLibraryGetSongs
 import us.huseli.kiddo.data.requests.GuiActivateWindow
-import us.huseli.kiddo.data.requests.GuiGetProperties
 import us.huseli.kiddo.data.requests.GuiSetFullscreen
 import us.huseli.kiddo.data.requests.InputExecuteAction
 import us.huseli.kiddo.data.requests.InputKeyPress
 import us.huseli.kiddo.data.requests.InputSendText
 import us.huseli.kiddo.data.requests.JsonRpcPermission
-import us.huseli.kiddo.data.requests.PlayerGetActivePlayers
-import us.huseli.kiddo.data.requests.PlayerGetItem
-import us.huseli.kiddo.data.requests.PlayerGetProperties
 import us.huseli.kiddo.data.requests.PlayerGoTo
 import us.huseli.kiddo.data.requests.PlayerOpen
 import us.huseli.kiddo.data.requests.PlayerPlayPause
@@ -101,8 +83,9 @@ class Repository @Inject constructor(
     private val jsonEngine: KodiJsonRpcEngine,
     private val websocketEngine: KodiWebsocketEngine,
     @ApplicationContext private val context: Context,
-) : KodiNotificationListener, KodiResponseListener, AbstractScopeHolder(), ILogger {
+) : AbstractScopeHolder(), ILogger {
     private val preferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+    private val worker: Worker = Worker(jsonEngine, websocketEngine, this)
 
     private val _isMuted = MutableStateFlow<Boolean?>(null)
     private val _isSeeking = MutableStateFlow(false)
@@ -114,7 +97,6 @@ class Repository @Inject constructor(
     private val _playerProperties = MutableStateFlow<PlayerPropertyValue?>(null)
     private val _playerSpeed = MutableStateFlow<Int?>(null)
     private val _playerTotalTime = MutableStateFlow<Long?>(null)
-    private val _timestamp = MutableStateFlow<Long>(System.currentTimeMillis())
     private val _volume = MutableStateFlow<Int?>(null)
 
     @Suppress("DEPRECATION")
@@ -134,13 +116,17 @@ class Repository @Inject constructor(
 
         path?.let { getImageBitmap(path) }
     }.stateWhileSubscribed()
+    val playerElapsedTime: StateFlow<Long> = _playerElapsedTime.asStateFlow()
     val playerElapsedTimeSeconds: StateFlow<Int?> =
         _playerElapsedTime.map { it.div(1000).toInt() }.distinctUntilChanged().stateWhileSubscribed()
+    val playerId: StateFlow<Int?> = _playerId.asStateFlow()
     val playerItem: StateFlow<IListItemAll?> = _playerItem.asStateFlow()
     val playerProgress: StateFlow<Float> = _playerProgress.asStateFlow()
     val playerProperties: StateFlow<PlayerPropertyValue?> = _playerProperties.stateWhileSubscribed()
+    val playerSpeed: StateFlow<Int?> = _playerSpeed.asStateFlow()
     val playerThumbnailImage: StateFlow<ImageBitmap?> =
         _playerItem.map { it?.thumbnail?.takeIfNotBlank()?.let { path -> getImageBitmap(path) } }.stateWhileSubscribed()
+    val playerTotalTime: StateFlow<Long?> = _playerTotalTime.asStateFlow()
     val playerTotalTimeSeconds: StateFlow<Int?> =
         _playerTotalTime.filterNotNull().map { it.div(1000).toInt() }.distinctUntilChanged().stateWhileSubscribed()
     val username: StateFlow<String?> = jsonEngine.username
@@ -149,77 +135,8 @@ class Repository @Inject constructor(
     val websocketStatus: StateFlow<KodiWebsocketEngine.Status> = websocketEngine.status
 
     init {
-        websocketEngine.addListener(this)
-        jsonEngine.addListener(this)
-
-        reset()
-
-        // If hostname changes, do some reloading.
-        launchOnIOThread {
-            jsonEngine.hostname.filterNotNull().distinctUntilChanged().collect {
-                reset()
-            }
-        }
-
-        // Listen for error messages on JSON and websockets engines separately.
-        launchOnMainThread {
-            jsonEngine.connectErrorString.filterNotNull().collect { error ->
-                SnackbarEngine.addError(error)
-            }
-        }
-        launchOnMainThread {
-            websocketEngine.connectErrorString.filterNotNull().collect { error ->
-                SnackbarEngine.addError(error)
-            }
-        }
-
-        // When _playerId is changed for whatever reason, refetch player properties & current item.
-        launchOnIOThread {
-            _playerId.filterNotNull().distinctUntilChanged().collect { playerId ->
-                fetchPlayerProperties(playerId)
-                fetchPlayerItem(playerId)
-            }
-        }
-
-        // Update _playerElapsedTime in ~500ms intervals while player is playing or seeking (but not while user is
-        // currently seeking).
-        launchOnMainThread {
-            combine(_playerSpeed, _isSeeking) { speed, isSeeking ->
-                speed.takeIf { !isSeeking }
-            }.collectLatest { speed ->
-                if (speed != null) {
-                    while (true) {
-                        val timestamp = System.currentTimeMillis()
-                        val increment = (timestamp - _timestamp.value).times(speed).toLong()
-
-                        _playerElapsedTime.value += increment
-                        _timestamp.value = timestamp
-                        delay(500)
-                    }
-                }
-            }
-        }
-
-        // Update _playerProgress from _playerElapsedTime and _playerTotalTime if the latter is known, and user is
-        // not currently seeking.
-        launchOnMainThread {
-            combine(
-                _playerElapsedTime,
-                _playerTotalTime.filterNotNull(),
-                _isSeeking,
-            ) { elapsed, time, isSeeking ->
-                if (isSeeking) null
-                else time
-                    .takeIf { it > 0 }
-                    ?.let { elapsed.div(it.toFloat()) }
-                    ?.takeIf { !it.isNaN() } ?: 0f
-            }.filterNotNull().distinctUntilChanged().collect { progress ->
-                _playerProgress.value = progress
-            }
-        }
+        worker.initialize()
     }
-
-    fun addNotificationListener(listener: KodiNotificationListener) = websocketEngine.addListener(listener)
 
     suspend fun cycleRepeat() = _playerId.value?.let {
         jsonEngine.post(PlayerSetRepeat(playerId = it, repeat = PlayerSetRepeat.Repeat.Cycle))
@@ -393,6 +310,10 @@ class Repository @Inject constructor(
     suspend fun increaseVolume() =
         jsonEngine.post(ApplicationSetVolume(type = ApplicationSetVolume.ParamType.Increment))
 
+    fun incrementPlayerElapsedTime(value: Long) {
+        if (!_isSeeking.value) _playerElapsedTime.value += value
+    }
+
     suspend fun listAlbums(
         filter: ListFilterAlbums? = null,
         sort: ListSort? = ListSort(method = ListSort.Method.Title),
@@ -466,6 +387,10 @@ class Repository @Inject constructor(
         )
     ).resultOrNull?.songs
 
+    fun mergePlayerProperties(value: PlayerPropertyValue) {
+        _playerProperties.value = _playerProperties.value?.merge(value) ?: value
+    }
+
     suspend fun openSubtitleSearch() = jsonEngine.post(GuiActivateWindow(window = GuiWindow.SubtitleSearch))
 
     suspend fun playAlbum(albumId: Int) = jsonEngine.post(PlayerOpen.Item(albumId = albumId))
@@ -481,7 +406,7 @@ class Repository @Inject constructor(
 
     suspend fun playSong(songId: Int) = jsonEngine.post(PlayerOpen.Item(songId = songId))
 
-    fun removeNotificationListener(listener: KodiNotificationListener) = websocketEngine.removeListener(listener)
+    fun registerNotificationListener(listener: KodiNotificationListener) = websocketEngine.registerListener(listener)
 
     suspend fun removePlaylistItem(playlistId: Int, position: Int) =
         jsonEngine.post(PlaylistRemove(playlistId = playlistId, position = position))
@@ -533,6 +458,48 @@ class Repository @Inject constructor(
         jsonEngine.post(PlayerSetShuffle(playerId = it, shuffle = GlobalToggle.Toggle))
     }
 
+    fun unregisterNotificationListener(listener: KodiNotificationListener) =
+        websocketEngine.unregisterListener(listener)
+
+    fun updateIsMuted(value: Boolean) {
+        _isMuted.value = value
+    }
+
+    fun updatePermissions(value: JsonRpcPermission.Result) {
+        _permissions.value = value
+    }
+
+    fun updatePlayerElapsedTime(value: Long, resetIsSeeking: Boolean = false) {
+        if (!_isSeeking.value || resetIsSeeking) {
+            _playerElapsedTime.value = value
+            if (resetIsSeeking) _isSeeking.value = false
+        }
+    }
+
+    fun updatePlayerId(value: Int?) {
+        _playerId.value = value
+    }
+
+    fun updatePlayerItem(value: IListItemAll?) {
+        _playerItem.value = value
+    }
+
+    fun updatePlayerProgress(value: Float) {
+        if (!_isSeeking.value) _playerProgress.value = value
+    }
+
+    fun updatePlayerProperties(value: PlayerPropertyValue) {
+        _playerProperties.value = value
+    }
+
+    fun updatePlayerSpeed(value: Int) {
+        _playerSpeed.value = value
+    }
+
+    fun updatePlayerTotalTime(value: Long) {
+        _playerTotalTime.value = value
+    }
+
     fun updateSettings(hostname: String, username: String, password: String, jsonPort: String, websocketPort: String) {
         preferences.edit()
             .putString(PREF_KODI_HOST, hostname)
@@ -546,164 +513,15 @@ class Repository @Inject constructor(
             .apply()
     }
 
+    fun updateVolume(value: Int) {
+        _volume.value = value
+    }
+
     /** PRIVATE METHODS ***********************************************************************************************/
-
-    private suspend fun fetchGuiProperties() =
-        jsonEngine.post(GuiGetProperties(properties = listOf(GuiPropertyName.Fullscreen)))
-
-    private suspend fun fetchPlayerItem(playerId: Int) {
-        val request = PlayerGetItem(
-            playerId = playerId,
-            properties = listOf(
-                ListFieldsAll.Album,
-                ListFieldsAll.AlbumId,
-                ListFieldsAll.Artist,
-                ListFieldsAll.CustomProperties,
-                ListFieldsAll.Director,
-                ListFieldsAll.Duration,
-                ListFieldsAll.Fanart,
-                ListFieldsAll.File,
-                ListFieldsAll.Runtime,
-                ListFieldsAll.Thumbnail,
-                ListFieldsAll.Title,
-            ),
-        )
-
-        jsonEngine.post(request)
-    }
-
-    private suspend fun fetchPlayerProperties(playerId: Int) {
-        jsonEngine.post(
-            PlayerGetProperties(
-                playerId = playerId,
-                properties = listOf(
-                    PlayerPropertyName.AudioStreams,
-                    PlayerPropertyName.CanChangeSpeed,
-                    PlayerPropertyName.CanMove,
-                    PlayerPropertyName.CanRepeat,
-                    PlayerPropertyName.CanSeek,
-                    PlayerPropertyName.CanShuffle,
-                    PlayerPropertyName.CurrentAudioStream,
-                    PlayerPropertyName.CurrentSubtitle,
-                    PlayerPropertyName.Repeat,
-                    PlayerPropertyName.Shuffled,
-                    PlayerPropertyName.Speed,
-                    PlayerPropertyName.SubtitleEnabled,
-                    PlayerPropertyName.Subtitles,
-                    PlayerPropertyName.Time,
-                    PlayerPropertyName.TotalTime,
-                    PlayerPropertyName.Type,
-                ),
-            ),
-        )
-    }
-
-    private fun reset() {
-        launchOnIOThread {
-            jsonEngine.post(
-                ApplicationGetProperties(
-                    properties = listOf(
-                        ApplicationPropertyName.Name,
-                        ApplicationPropertyName.Volume,
-                        ApplicationPropertyName.Muted,
-                        ApplicationPropertyName.Version,
-                        ApplicationPropertyName.Language,
-                    ),
-                ),
-            )
-        }
-        launchOnIOThread { jsonEngine.post(PlayerGetActivePlayers()) }
-        launchOnIOThread { fetchGuiProperties() }
-        launchOnIOThread { jsonEngine.post(JsonRpcPermission()) }
-    }
 
     private fun setPlayerElapsedTimeFromProgress(progress: Double) {
         _playerTotalTime.value?.also {
             _playerElapsedTime.value = it.times(progress).toLong()
-        }
-    }
-
-    /** OVERRIDDEN METHODS ********************************************************************************************/
-
-    override fun onKodiNotification(notification: Notification<*>) {
-        if (listOf("Player.OnAVStart", "Player.OnResume", "Player.OnStop").contains(notification.method)) {
-            _playerId.value?.also {
-                launchOnIOThread {
-                    fetchPlayerProperties(it)
-                    if (notification.method != "Player.OnStop") fetchPlayerItem(it)
-                    else _playerItem.value = null
-                }
-            }
-        }
-        if (notification.method == "Player.OnAVChange") {
-            launchOnIOThread { fetchGuiProperties() }
-        }
-        if (notification.data is ApplicationOnVolumeChanged) {
-            _volume.value = notification.data.volume
-            _isMuted.value = notification.data.muted
-        }
-        if (notification.data is PlayerOnPropertyChanged) {
-            _playerProperties.value =
-                _playerProperties.value?.merge(notification.data.property) ?: notification.data.property
-        }
-        if (notification.data is IHasPlayerSpeed) {
-            notification.data.speed?.also { _playerSpeed.value = it }
-        }
-        if (notification.data is IHasPlayerId) {
-            _playerId.value = notification.data.playerid
-        }
-        if (notification.data is IHasPlayerTime) {
-            if (!_isSeeking.value) notification.data.time?.totalMilliseconds?.also { _playerElapsedTime.value = it }
-        }
-    }
-
-    override fun <Result : Any> onKodiRequestSucceeded(request: AbstractRequest<Result>, result: Result) {
-        if (request is ApplicationSetVolume && result is Int) {
-            _volume.value = result
-        }
-        if (result is ApplicationGetProperties.Result) {
-            _volume.value = result.volume
-            _isMuted.value = result.muted
-        }
-        if (result is IHasPlayerSpeed) {
-            result.speed?.also { _playerSpeed.value = it }
-        }
-        if (result is PlayerPropertyValue) {
-            _playerProperties.value = result
-        }
-        if (result is IHasPlayerTotalTime) {
-            result.totaltime?.totalMilliseconds?.takeIf { it > 0 }?.also { _playerTotalTime.value = it }
-        }
-        if (result is IHasPlayerId) {
-            _playerId.value = result.playerid
-        }
-        if (result is IHasPlayerTime) {
-            if (request is PlayerSeek || !_isSeeking.value) {
-                result.time?.totalMilliseconds?.also { millis ->
-                    _playerElapsedTime.value = millis
-                    _isSeeking.value = false
-                }
-            }
-        }
-        if (request is PlayerGetActivePlayers) {
-            request.result.firstOrNull()?.also { _playerId.value = it.playerid }
-        }
-        if (request is PlayerGetItem) {
-            _playerItem.value = request.result.item.takeIf { it.stringId != null }
-        }
-        if (request is ApplicationSetVolume) {
-            _volume.value = request.result
-        }
-        if (request is PlayerSetSubtitle) {
-            launchOnIOThread {
-                // Seems like there is some lag between setting subtitles and player properties being correctly
-                // updated, hence the ugly little arbitrary delay:
-                delay(500)
-                fetchPlayerProperties(playerId = request.playerId)
-            }
-        }
-        if (request is JsonRpcPermission) {
-            _permissions.value = request.result
         }
     }
 }

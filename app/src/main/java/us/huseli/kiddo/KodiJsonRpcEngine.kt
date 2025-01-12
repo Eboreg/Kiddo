@@ -67,10 +67,6 @@ class KodiJsonRpcEngine @Inject constructor(@ApplicationContext context: Context
         preferences.registerOnSharedPreferenceChangeListener(this)
     }
 
-    fun addListener(listener: KodiResponseListener) {
-        listeners.add(listener)
-    }
-
     suspend fun <Result : Any, Request : AbstractRequest<Result>> post(request: Request): Request {
         rateLimitedRequestManager.cancelPending(request.method)
         return post(request, ++requestId)
@@ -89,8 +85,12 @@ class KodiJsonRpcEngine @Inject constructor(@ApplicationContext context: Context
         ) { post(request, requestId) }
     }
 
+    fun registerListener(listener: KodiResponseListener) {
+        listeners.add(listener)
+    }
+
     @Suppress("unused")
-    fun removeListener(listener: KodiResponseListener) {
+    fun unregisterListener(listener: KodiResponseListener) {
         listeners.remove(listener)
     }
 
@@ -108,6 +108,7 @@ class KodiJsonRpcEngine @Inject constructor(@ApplicationContext context: Context
             request.resultOrNull?.also { result ->
                 listeners.forEach { it.onKodiRequestSucceeded(request, result) }
             }
+            _connectError.value = null
         } catch (e: Throwable) {
             val error = when (e) {
                 is KodiError -> e

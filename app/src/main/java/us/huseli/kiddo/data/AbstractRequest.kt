@@ -14,10 +14,13 @@ abstract class AbstractRequest<Result : Any> : ILogger {
     enum class Status { Pending, Failed, Succeeded }
 
     private var _result: Result? = null
+    private var _requestId: Int? = null
 
     abstract val method: String
     abstract val responseTypeToken: TypeToken<KodiJsonRpcResponse<Result>>
 
+    val requestId: Int
+        get() = _requestId!!
     val result: Result
         get() = _result!!
     val resultOrNull: Result?
@@ -51,6 +54,8 @@ abstract class AbstractRequest<Result : Any> : ILogger {
             }
         val result = response.result
         val error = response.error
+
+        _requestId = requestId
 
         if (error != null) {
             status = Status.Failed

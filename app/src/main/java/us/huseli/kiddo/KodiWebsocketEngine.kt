@@ -102,11 +102,11 @@ class KodiWebsocketEngine @Inject constructor(@ApplicationContext context: Conte
         }
     }
 
-    fun addListener(listener: KodiNotificationListener) {
+    fun registerListener(listener: KodiNotificationListener) {
         listeners.add(listener)
     }
 
-    fun removeListener(listener: KodiNotificationListener) {
+    fun unregisterListener(listener: KodiNotificationListener) {
         listeners.remove(listener)
     }
 

@@ -28,7 +28,7 @@ class QueueViewModel @Inject constructor(private val repository: Repository) : A
     val playlists: StateFlow<List<PlaylistGetPlaylists.ResultItem>> = _playlists.asStateFlow()
 
     init {
-        repository.addNotificationListener(this)
+        repository.registerNotificationListener(this)
         launchOnIOThread { getPlaylists() }
     }
 
@@ -80,7 +80,7 @@ class QueueViewModel @Inject constructor(private val repository: Repository) : A
 
     override fun onCleared() {
         super.onCleared()
-        repository.removeNotificationListener(this)
+        repository.unregisterNotificationListener(this)
     }
 
     override fun onKodiNotification(notification: Notification<*>) {

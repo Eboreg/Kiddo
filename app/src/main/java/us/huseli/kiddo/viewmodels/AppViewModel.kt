@@ -22,7 +22,7 @@ class AppViewModel @Inject constructor(private val repository: Repository) : Abs
     val playerProperties = repository.playerProperties
 
     init {
-        repository.addNotificationListener(this)
+        repository.registerNotificationListener(this)
     }
 
     fun cancelInputRequest() {
@@ -41,7 +41,7 @@ class AppViewModel @Inject constructor(private val repository: Repository) : Abs
 
     override fun onCleared() {
         super.onCleared()
-        repository.removeNotificationListener(this)
+        repository.unregisterNotificationListener(this)
     }
 
     override fun onKodiNotification(notification: Notification<*>) {

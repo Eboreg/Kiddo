@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package us.huseli.kiddo
 
 import androidx.compose.foundation.clickable
@@ -5,8 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.TextUnit
 import us.huseli.retaintheme.ui.theme.LocalBasicColors
 import us.huseli.retaintheme.utils.ILogger
 import java.util.Locale
@@ -24,9 +24,9 @@ fun Duration.toTimeMap() = toComponents { hours, minutes, seconds, nanoseconds -
     )
 }
 
-fun String.takeIfNotEmpty() = takeIf { it.isNotEmpty() }
-
 fun String.takeIfNotBlank() = takeIf { it.isNotBlank() }
+
+fun String.takeIfNotEmpty() = takeIf { it.isNotEmpty() }
 
 fun <T> Set<T>.takeIfNotEmpty() = takeIf { it.isNotEmpty() }
 
@@ -92,3 +92,11 @@ val Int.milliseconds: Duration
 
 val Int.minutes: Duration
     get() = toDuration(DurationUnit.MINUTES)
+
+fun <K, V> MutableMap<K, V>.setOrMerge(key: K, value: V, mergeFunc: (oldValue: V, newValue: V) -> V): V {
+    val oldValue = get(key)
+    val newValue = oldValue?.let { mergeFunc(it, value) } ?: value
+
+    this[key] = newValue
+    return newValue
+}
