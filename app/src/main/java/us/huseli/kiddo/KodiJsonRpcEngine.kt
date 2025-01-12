@@ -16,6 +16,7 @@ import us.huseli.kiddo.Constants.PREF_KODI_PASSWORD
 import us.huseli.kiddo.Constants.PREF_KODI_PORT
 import us.huseli.kiddo.Constants.PREF_KODI_USERNAME
 import us.huseli.kiddo.data.AbstractRequest
+import us.huseli.retaintheme.extensions.takeIfNotBlank
 import us.huseli.retaintheme.utils.AbstractScopeHolder
 import us.huseli.retaintheme.utils.ILogger
 import java.net.SocketTimeoutException

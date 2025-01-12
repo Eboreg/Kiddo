@@ -7,7 +7,7 @@ import us.huseli.kiddo.data.types.ListFilterAlbums
 import us.huseli.kiddo.data.types.ListLimits
 import us.huseli.kiddo.data.types.ListLimitsReturned
 import us.huseli.kiddo.data.types.ListSort
-import us.huseli.kiddo.takeIfNotEmpty
+import us.huseli.retaintheme.extensions.takeIfNotEmpty
 import java.lang.reflect.Type
 
 class AudioLibraryGetAlbums(

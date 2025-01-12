@@ -21,7 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import us.huseli.kiddo.R
 import us.huseli.kiddo.data.types.PlayerPropertyValue
-import us.huseli.kiddo.takeIfNotEmpty
+import us.huseli.retaintheme.extensions.takeIfNotEmpty
 
 @Composable
 fun AudioStreamMenuButton(properties: PlayerPropertyValue?, onSetStreamClick: (Int) -> Unit) {

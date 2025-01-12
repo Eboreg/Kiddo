@@ -1,10 +1,10 @@
 package us.huseli.kiddo.data.types.interfaces
 
 import com.google.gson.annotations.SerializedName
-import us.huseli.kiddo.seconds
 import us.huseli.kiddo.sensibleFormat
-import us.huseli.kiddo.takeIfNotEmpty
+import us.huseli.retaintheme.extensions.takeIfNotEmpty
 import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 
 interface IListItemAll : IListItemBase {
     val channel: String?

@@ -29,6 +29,7 @@ import us.huseli.kiddo.data.requests.PlayerGetProperties
 import us.huseli.kiddo.data.requests.PlayerSeek
 import us.huseli.kiddo.data.requests.PlayerSetSubtitle
 import us.huseli.kiddo.data.types.PlayerPropertyValue
+import us.huseli.retaintheme.extensions.setOrMerge
 import us.huseli.retaintheme.snackbar.SnackbarEngine
 import us.huseli.retaintheme.utils.AbstractScopeHolder
 import us.huseli.retaintheme.utils.ILogger

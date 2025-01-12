@@ -26,9 +26,9 @@ import us.huseli.kiddo.compose.MediaDetailsBanner
 import us.huseli.kiddo.compose.MediaDetailsInfo
 import us.huseli.kiddo.compose.screens.moviedetails.MovieDetailsCast
 import us.huseli.kiddo.routing.Routes
-import us.huseli.kiddo.seconds
-import us.huseli.kiddo.takeIfNotBlank
 import us.huseli.kiddo.viewmodels.MovieDetailsViewModel
+import us.huseli.retaintheme.extensions.takeIfNotBlank
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun MovieDetailsScreen(

@@ -16,7 +16,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import us.huseli.kiddo.R
 import us.huseli.kiddo.sensibleFormat
-import us.huseli.kiddo.takeIfNotEmpty
+import us.huseli.retaintheme.extensions.takeIfNotEmpty
 import kotlin.time.Duration
 
 @OptIn(ExperimentalLayoutApi::class)

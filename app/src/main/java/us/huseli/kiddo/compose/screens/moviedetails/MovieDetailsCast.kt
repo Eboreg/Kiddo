@@ -35,10 +35,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import us.huseli.kiddo.R
 import us.huseli.kiddo.data.types.VideoCast
-import us.huseli.kiddo.randomBasicColor
 import us.huseli.kiddo.routing.Routes
-import us.huseli.kiddo.takeIfNotBlank
 import us.huseli.kiddo.viewmodels.MovieDetailsViewModel
+import us.huseli.retaintheme.extensions.takeIfNotBlank
+import us.huseli.retaintheme.ui.theme.LocalBasicColors
 
 @Suppress("FunctionName")
 fun LazyGridScope.MovieDetailsCast(
@@ -55,7 +55,7 @@ fun LazyGridScope.MovieDetailsCast(
 
     items(cast, key = { it.order }) { member ->
         var portrait by remember { mutableStateOf<ImageBitmap?>(null) }
-        val background = randomBasicColor()
+        val background = LocalBasicColors.current.random()
 
         LaunchedEffect(member.thumbnail) {
             portrait = member.thumbnail?.takeIfNotBlank()?.let { viewModel.getActorPortrait(it) }

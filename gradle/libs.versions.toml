@@ -15,7 +15,7 @@ materialIconsExtended = "1.7.6"
 navigationCompose = "2.8.5"
 preference = "1.2.1"
 reorderable = "2.4.2"
-retainTheme = "4.8.0"
+retainTheme = "4.9.0"
 uiTestManifest = "1.7.6"
 
 [libraries]

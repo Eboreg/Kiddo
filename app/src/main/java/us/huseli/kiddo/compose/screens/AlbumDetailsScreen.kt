@@ -22,10 +22,10 @@ import us.huseli.kiddo.compose.MediaDetailsBanner
 import us.huseli.kiddo.compose.MediaDetailsInfo
 import us.huseli.kiddo.compose.screens.albumdetails.AlbumDetailsSong
 import us.huseli.kiddo.routing.Routes
-import us.huseli.kiddo.seconds
-import us.huseli.kiddo.takeIfNotBlank
-import us.huseli.kiddo.takeIfNotEmpty
 import us.huseli.kiddo.viewmodels.AlbumDetailsViewModel
+import us.huseli.retaintheme.extensions.takeIfNotBlank
+import us.huseli.retaintheme.extensions.takeIfNotEmpty
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun AlbumDetailsScreen(

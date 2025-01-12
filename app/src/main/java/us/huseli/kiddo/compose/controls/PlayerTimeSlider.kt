@@ -15,8 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import us.huseli.kiddo.seconds
 import us.huseli.kiddo.sensibleFormat
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun PlayerTimeSlider(

@@ -34,7 +34,7 @@ import sh.calvin.reorderable.ReorderableLazyListState
 import us.huseli.kiddo.R
 import us.huseli.kiddo.data.enums.PlaylistType
 import us.huseli.kiddo.data.types.interfaces.IListItemAll
-import us.huseli.kiddo.takeIfNotBlank
+import us.huseli.retaintheme.extensions.takeIfNotBlank
 
 
 @Composable

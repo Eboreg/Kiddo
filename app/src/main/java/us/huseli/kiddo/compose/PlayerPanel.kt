@@ -64,8 +64,8 @@ import us.huseli.kiddo.data.enums.PlayerRepeat
 import us.huseli.kiddo.data.types.PlayerPropertyValue
 import us.huseli.kiddo.data.types.interfaces.IListItemAll
 import us.huseli.kiddo.data.types.interfaces.IListItemBase
-import us.huseli.kiddo.takeIfNotBlank
 import us.huseli.kiddo.viewmodels.PlayerPanelViewModel
+import us.huseli.retaintheme.extensions.takeIfNotBlank
 import kotlin.math.sqrt
 
 enum class PanelCollapseStatus { Collapsed, Expanded }

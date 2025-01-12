@@ -1,7 +1,7 @@
 package us.huseli.kiddo.data.types
 
 import us.huseli.kiddo.stripTags
-import us.huseli.kiddo.takeIfNotBlank
+import us.huseli.retaintheme.extensions.takeIfNotBlank
 
 data class PlayerSubtitle(
     val index: Int,

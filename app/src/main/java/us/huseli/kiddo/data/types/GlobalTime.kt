@@ -1,10 +1,10 @@
 package us.huseli.kiddo.data.types
 
-import us.huseli.kiddo.hours
-import us.huseli.kiddo.milliseconds
-import us.huseli.kiddo.minutes
-import us.huseli.kiddo.seconds
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.DurationUnit
 
 data class GlobalTime(

@@ -12,7 +12,7 @@ import us.huseli.kiddo.Repository
 import us.huseli.kiddo.data.types.VideoDetailsMovie
 import us.huseli.kiddo.data.types.interfaces.IVideoDetailsMovie
 import us.huseli.kiddo.routing.Routes
-import us.huseli.kiddo.takeIfNotBlank
+import us.huseli.retaintheme.extensions.takeIfNotBlank
 import javax.inject.Inject
 
 @HiltViewModel

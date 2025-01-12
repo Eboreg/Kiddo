@@ -3,7 +3,7 @@ package us.huseli.kiddo.data.types
 import us.huseli.kiddo.data.enums.ListFilterFieldsAlbums
 import us.huseli.kiddo.data.enums.ListFilterOperators
 import us.huseli.kiddo.data.types.interfaces.IListFilter
-import us.huseli.kiddo.takeIfNotEmpty
+import us.huseli.retaintheme.extensions.takeIfNotEmpty
 
 data class ListFilterAlbums(
     override val and: Collection<ListFilterAlbums>? = null,

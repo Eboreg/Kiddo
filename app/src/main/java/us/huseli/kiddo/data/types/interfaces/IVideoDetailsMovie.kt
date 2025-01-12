@@ -2,10 +2,10 @@ package us.huseli.kiddo.data.types.interfaces
 
 import us.huseli.kiddo.data.types.VideoCast
 import us.huseli.kiddo.data.types.VideoRating
-import us.huseli.kiddo.seconds
 import us.huseli.kiddo.sensibleFormat
-import us.huseli.kiddo.takeIfNotBlank
-import us.huseli.kiddo.takeIfNotEmpty
+import us.huseli.retaintheme.extensions.takeIfNotBlank
+import us.huseli.retaintheme.extensions.takeIfNotEmpty
+import kotlin.time.Duration.Companion.seconds
 
 interface IVideoDetailsMovie : IVideoDetailsFile {
     val cast: List<VideoCast>?

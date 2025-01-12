@@ -3,7 +3,7 @@ package us.huseli.kiddo.data.types
 import us.huseli.kiddo.data.enums.ListFilterFieldsMovies
 import us.huseli.kiddo.data.enums.ListFilterOperators
 import us.huseli.kiddo.data.types.interfaces.IListFilter
-import us.huseli.kiddo.takeIfNotEmpty
+import us.huseli.retaintheme.extensions.takeIfNotEmpty
 
 data class ListFilterMovies(
     override val and: List<ListFilterMovies>? = null,

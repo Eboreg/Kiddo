@@ -70,6 +70,7 @@ import us.huseli.kiddo.data.types.interfaces.IListItemAll
 import us.huseli.kiddo.data.types.interfaces.IVideoDetailsMovie
 import us.huseli.retaintheme.RetainConnectionError
 import us.huseli.retaintheme.RetainHttpError
+import us.huseli.retaintheme.extensions.takeIfNotBlank
 import us.huseli.retaintheme.request.Request
 import us.huseli.retaintheme.snackbar.SnackbarEngine
 import us.huseli.retaintheme.utils.AbstractScopeHolder

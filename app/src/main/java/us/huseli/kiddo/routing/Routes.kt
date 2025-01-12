@@ -9,7 +9,7 @@ import us.huseli.kiddo.data.enums.ListFilterOperators
 import us.huseli.kiddo.data.types.ListFilterAlbums
 import us.huseli.kiddo.data.types.ListFilterMovies
 import us.huseli.kiddo.data.types.ListSort
-import us.huseli.kiddo.takeIfNotBlank
+import us.huseli.retaintheme.extensions.takeIfNotBlank
 
 interface IMediaListRoute {
     val sortMethod: ListSort.Method?

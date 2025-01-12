@@ -1,7 +1,7 @@
 package us.huseli.kiddo.data.types.interfaces
 
-import us.huseli.kiddo.takeIfNotBlank
-import us.huseli.kiddo.takeIfNotEmpty
+import us.huseli.retaintheme.extensions.takeIfNotBlank
+import us.huseli.retaintheme.extensions.takeIfNotEmpty
 
 interface IAudioDetailsMedia : IAudioDetailsBase {
     val artist: List<String>?

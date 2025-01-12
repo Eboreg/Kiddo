@@ -1,11 +1,11 @@
 package us.huseli.kiddo.data.types.interfaces
 
-import us.huseli.kiddo.cleanDuplicates
 import us.huseli.kiddo.data.enums.AudioAlbumReleaseType
 import us.huseli.kiddo.data.types.AudioDetailsGenre
-import us.huseli.kiddo.seconds
 import us.huseli.kiddo.sensibleFormat
-import us.huseli.kiddo.takeIfNotEmpty
+import us.huseli.retaintheme.extensions.cleanDuplicates
+import us.huseli.retaintheme.extensions.takeIfNotEmpty
+import kotlin.time.Duration.Companion.seconds
 
 interface IAudioDetailsAlbum : IAudioDetailsMedia {
     val albumduration: Int?

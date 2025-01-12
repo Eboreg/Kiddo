@@ -12,8 +12,8 @@ import us.huseli.kiddo.Repository
 import us.huseli.kiddo.data.types.AudioDetailsAlbum
 import us.huseli.kiddo.data.types.AudioDetailsSong
 import us.huseli.kiddo.routing.Routes
-import us.huseli.kiddo.takeIfNotBlank
 import us.huseli.retaintheme.extensions.launchOnIOThread
+import us.huseli.retaintheme.extensions.takeIfNotBlank
 import us.huseli.retaintheme.utils.AbstractBaseViewModel
 import javax.inject.Inject
 

@@ -10,9 +10,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import us.huseli.kiddo.data.types.AudioDetailsSong
-import us.huseli.kiddo.seconds
 import us.huseli.kiddo.sensibleFormat
-import us.huseli.kiddo.takeIfNotEmpty
+import us.huseli.retaintheme.extensions.takeIfNotEmpty
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun AlbumDetailsSong(

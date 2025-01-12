@@ -15,7 +15,7 @@ import androidx.compose.ui.res.stringResource
 import us.huseli.kiddo.R
 import us.huseli.kiddo.data.AlbumFilterState
 import us.huseli.kiddo.routing.Routes
-import us.huseli.kiddo.takeIfNotBlank
+import us.huseli.retaintheme.extensions.takeIfNotBlank
 
 @Composable
 fun AlbumListFilterDialog(
