@@ -1,12 +1,12 @@
 package us.huseli.kiddo.data.requests
 
-import us.huseli.kiddo.data.requests.interfaces.IRequestStringResult
+import us.huseli.kiddo.data.AbstractStringRequest
 
 class PlayerGoTo(
     val playerId: Int,
     val to: To = To.Absolute,
     val position: Int? = null,
-) : IRequestStringResult {
+) : AbstractStringRequest() {
     override val method: String = "Player.Goto"
 
     override fun getParams(): Map<String, Any?> {

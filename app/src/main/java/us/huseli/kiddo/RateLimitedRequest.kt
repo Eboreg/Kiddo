@@ -2,6 +2,7 @@ package us.huseli.kiddo
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import us.huseli.kiddo.data.AbstractRequest
 
 class RateLimitedRequestManager {
     private val _requests = MutableStateFlow<List<RateLimitedRequest>>(emptyList())
@@ -17,25 +18,25 @@ class RateLimitedRequestManager {
         }
     }
 
-    suspend fun <Result> run(
-        method: String,
+    suspend fun <Result : Any, Request : AbstractRequest<Result>> run(
+        request: Request,
         requestId: Int,
         minIntervalMs: Long,
-        callback: suspend () -> Result,
-    ): Result? {
+        callback: suspend () -> Request
+    ): Request? {
         val now = System.currentTimeMillis()
-        val req = RateLimitedRequest(method = method, requestId = requestId)
+        val req = RateLimitedRequest(method = request.method, requestId = requestId)
 
-        cancelPending(method)
+        cancelPending(request.method)
         _requests.value += req
 
         val lastRun = _requests.value
-            .filter { it.method == method && it.isActiveOrFinished() }
+            .filter { it.method == request.method && it.isActiveOrFinished() }
             .filter { now - it.startTime < minIntervalMs }
             .maxByOrNull { it.startTime }
         val startDelay = lastRun?.let { minIntervalMs - (now - it.startTime) }?.coerceIn(0L, minIntervalMs)
 
-        return req.run<Result>(startDelay, callback)
+        return req.run<Request>(startDelay, callback)
     }
 }
 

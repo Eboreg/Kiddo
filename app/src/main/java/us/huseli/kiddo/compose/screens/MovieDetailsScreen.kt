@@ -32,7 +32,6 @@ import us.huseli.kiddo.viewmodels.MovieDetailsViewModel
 
 @Composable
 fun MovieDetailsScreen(
-    // onMovieListClick: (MovieListDestination.Route) -> Unit,
     onMovieListClick: (Routes.MovieList) -> Unit,
     viewModel: MovieDetailsViewModel = hiltViewModel(),
 ) {

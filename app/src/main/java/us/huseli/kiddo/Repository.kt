@@ -7,7 +7,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,7 +20,7 @@ import us.huseli.kiddo.Constants.PREF_KODI_PASSWORD
 import us.huseli.kiddo.Constants.PREF_KODI_PORT
 import us.huseli.kiddo.Constants.PREF_KODI_USERNAME
 import us.huseli.kiddo.Constants.PREF_KODI_WEBSOCKET_PORT
-import us.huseli.kiddo.data.KodiJsonRpcResponse
+import us.huseli.kiddo.data.AbstractRequest
 import us.huseli.kiddo.data.enums.ApplicationPropertyName
 import us.huseli.kiddo.data.enums.AudioFieldsAlbum
 import us.huseli.kiddo.data.enums.AudioFieldsSong
@@ -40,7 +39,6 @@ import us.huseli.kiddo.data.interfaces.IHasPlayerTotalTime
 import us.huseli.kiddo.data.notifications.Notification
 import us.huseli.kiddo.data.notifications.data.ApplicationOnVolumeChanged
 import us.huseli.kiddo.data.notifications.data.PlayerOnPropertyChanged
-import us.huseli.kiddo.data.notifications.data.PlayerOnStop
 import us.huseli.kiddo.data.requests.ApplicationGetProperties
 import us.huseli.kiddo.data.requests.ApplicationSetMute
 import us.huseli.kiddo.data.requests.ApplicationSetVolume
@@ -69,8 +67,10 @@ import us.huseli.kiddo.data.requests.PlayerSetSubtitle
 import us.huseli.kiddo.data.requests.PlayerSetTempo
 import us.huseli.kiddo.data.requests.PlayerStop
 import us.huseli.kiddo.data.requests.PlaylistAdd
+import us.huseli.kiddo.data.requests.PlaylistGetItems
 import us.huseli.kiddo.data.requests.PlaylistGetPlaylists
 import us.huseli.kiddo.data.requests.PlaylistRemove
+import us.huseli.kiddo.data.requests.PlaylistSwap
 import us.huseli.kiddo.data.requests.VideoLibraryGetMovieDetails
 import us.huseli.kiddo.data.requests.VideoLibraryGetMovies
 import us.huseli.kiddo.data.types.AudioDetailsAlbum
@@ -78,6 +78,7 @@ import us.huseli.kiddo.data.types.AudioDetailsSong
 import us.huseli.kiddo.data.types.ListFilterAlbums
 import us.huseli.kiddo.data.types.ListFilterMovies
 import us.huseli.kiddo.data.types.ListFilterSongs
+import us.huseli.kiddo.data.types.ListItemAll
 import us.huseli.kiddo.data.types.ListSort
 import us.huseli.kiddo.data.types.PlayerPropertyValue
 import us.huseli.kiddo.data.types.PlaylistItem
@@ -116,38 +117,36 @@ class Repository @Inject constructor(
     private val _timestamp = MutableStateFlow<Long>(System.currentTimeMillis())
     private val _volume = MutableStateFlow<Int?>(null)
 
-    val connectErrorStrings = combine(
-        websocketEngine.connectError.map { it?.message ?: it?.toString() }.distinctUntilChanged(),
-        jsonEngine.connectError.map { it?.message ?: it?.toString() }.distinctUntilChanged(),
-    ) { websocket, json ->
-        listOfNotNull(websocket, json)
-    }.stateWhileSubscribed(emptyList())
-    val hostname = jsonEngine.hostname
-    val isMuted = _isMuted.filterNotNull().stateWhileSubscribed(false)
-    val isPlaying = _playerSpeed.map { it == 1 }.stateWhileSubscribed(false)
-    val jsonPort = jsonEngine.port
-    val password = jsonEngine.password
-    val playerCoverImage = _playerItem.map {
+    @Suppress("DEPRECATION")
+    val connectErrorStrings: StateFlow<List<String>> = combine(
+        websocketEngine.connectError.map { it?.toString() }.distinctUntilChanged(),
+        jsonEngine.connectError.map { it?.toString() }.distinctUntilChanged(),
+    ) { websocket, json -> listOfNotNull(websocket, json) }.stateWhileSubscribed(emptyList())
+    val hostname: StateFlow<String?> = jsonEngine.hostname
+    val isMuted: StateFlow<Boolean> = _isMuted.filterNotNull().stateWhileSubscribed(false)
+    val isPlaying: StateFlow<Boolean> = _playerSpeed.map { it == 1 }.stateWhileSubscribed(false)
+    val jsonPort: StateFlow<Int> = jsonEngine.port
+    val password: StateFlow<String?> = jsonEngine.password
+    val playerCoverImage: StateFlow<ImageBitmap?> = _playerItem.map {
         val path = it?.art?.poster?.takeIfNotBlank()
             ?: it?.art?.fanart?.takeIfNotBlank()
             ?: it?.fanart?.takeIfNotBlank()
 
         path?.let { getImageBitmap(path) }
     }.stateWhileSubscribed()
-    val playerElapsedTimeSeconds =
+    val playerElapsedTimeSeconds: StateFlow<Int?> =
         _playerElapsedTime.map { it.div(1000).toInt() }.distinctUntilChanged().stateWhileSubscribed()
-    val playerItem = _playerItem.asStateFlow()
-    val playerProgress = _playerProgress.asStateFlow()
-    val playerProperties = _playerProperties.stateWhileSubscribed()
-    val playerThumbnailImage: StateFlow<ImageBitmap?> = _playerItem.map {
-        it?.thumbnail?.takeIfNotBlank()?.let { path -> getImageBitmap(path) }
-    }.stateWhileSubscribed()
-    val playerTotalTimeSeconds =
+    val playerItem: StateFlow<IListItemAll?> = _playerItem.asStateFlow()
+    val playerProgress: StateFlow<Float> = _playerProgress.asStateFlow()
+    val playerProperties: StateFlow<PlayerPropertyValue?> = _playerProperties.stateWhileSubscribed()
+    val playerThumbnailImage: StateFlow<ImageBitmap?> =
+        _playerItem.map { it?.thumbnail?.takeIfNotBlank()?.let { path -> getImageBitmap(path) } }.stateWhileSubscribed()
+    val playerTotalTimeSeconds: StateFlow<Int?> =
         _playerTotalTime.filterNotNull().map { it.div(1000).toInt() }.distinctUntilChanged().stateWhileSubscribed()
-    val playlists: StateFlow<List<PlaylistGetPlaylists.ResultItem>> = jsonEngine.playlists
-    val username = jsonEngine.username
-    val volume = _volume.asStateFlow()
-    val websocketPort = websocketEngine.port
+    val username: StateFlow<String?> = jsonEngine.username
+    val volume: StateFlow<Int?> = _volume.asStateFlow()
+    val websocketPort: StateFlow<Int> = websocketEngine.port
+    val websocketStatus: StateFlow<KodiWebsocketEngine.Status> = websocketEngine.status
 
     init {
         websocketEngine.addListener(this)
@@ -155,11 +154,14 @@ class Repository @Inject constructor(
 
         reset()
 
+        // If hostname changes, do some reloading.
         launchOnIOThread {
-            jsonEngine.post(JsonRpcPermission())?.also { _permissions.value = it }
+            jsonEngine.hostname.filterNotNull().distinctUntilChanged().collect {
+                reset()
+            }
         }
 
-        // Listen for error messages on JSON and websockets engines separately
+        // Listen for error messages on JSON and websockets engines separately.
         launchOnMainThread {
             jsonEngine.connectErrorString.filterNotNull().collect { error ->
                 SnackbarEngine.addError(error)
@@ -171,19 +173,7 @@ class Repository @Inject constructor(
             }
         }
 
-        // Update _playerElapsedTime when it is changed by updated player properties, and user is not currently seeking
-        launchOnMainThread {
-            combine(
-                _playerProperties.map { it?.time?.totalMilliseconds }.filterNotNull().distinctUntilChanged(),
-                _isSeeking,
-            ) { elapsed, isSeeking ->
-                elapsed.takeIf { !isSeeking }
-            }.filterNotNull().collect { elapsed ->
-                _playerElapsedTime.value = elapsed
-            }
-        }
-
-        // When _playerId is changed for whatever reason, refetch player properties & current item
+        // When _playerId is changed for whatever reason, refetch player properties & current item.
         launchOnIOThread {
             _playerId.filterNotNull().distinctUntilChanged().collect { playerId ->
                 fetchPlayerProperties(playerId)
@@ -192,7 +182,7 @@ class Repository @Inject constructor(
         }
 
         // Update _playerElapsedTime in ~500ms intervals while player is playing or seeking (but not while user is
-        // currently seeking)
+        // currently seeking).
         launchOnMainThread {
             combine(_playerSpeed, _isSeeking) { speed, isSeeking ->
                 speed.takeIf { !isSeeking }
@@ -211,7 +201,7 @@ class Repository @Inject constructor(
         }
 
         // Update _playerProgress from _playerElapsedTime and _playerTotalTime if the latter is known, and user is
-        // not currently seeking
+        // not currently seeking.
         launchOnMainThread {
             combine(
                 _playerElapsedTime,
@@ -259,36 +249,33 @@ class Repository @Inject constructor(
 
     suspend fun enqueueAlbum(details: IAudioDetailsAlbum) {
         getPlaylists()?.find { it.type == PlaylistType.Audio }?.also { playlist ->
-            val result = jsonEngine.post(
+            val request = jsonEngine.post(
                 PlaylistAdd(
                     playlistId = playlist.playlistid,
                     item = PlaylistItem(albumId = details.albumid),
                 )
             )
 
-            if (result == "OK") SnackbarEngine.addInfo(context.getString(R.string.x_was_enqueued, details.displayTitle))
+            if (request.resultOrNull == "OK")
+                SnackbarEngine.addInfo(context.getString(R.string.x_was_enqueued, details.displayTitle))
         }
     }
 
     suspend fun enqueueMovie(details: IVideoDetailsMovie) {
         getPlaylists()?.find { it.type == PlaylistType.Video }?.also { playlist ->
-            val result = jsonEngine.post(
+            val request = jsonEngine.post(
                 PlaylistAdd(
                     playlistId = playlist.playlistid,
                     item = PlaylistItem(movieId = details.movieid),
                 )
             )
 
-            if (result == "OK") SnackbarEngine.addInfo(context.getString(R.string.x_was_enqueued, details.displayTitle))
+            if (request.resultOrNull == "OK")
+                SnackbarEngine.addInfo(context.getString(R.string.x_was_enqueued, details.displayTitle))
         }
     }
 
     suspend fun executeInputAction(action: InputAction) = jsonEngine.post(InputExecuteAction(action = action))
-
-    suspend fun fetchPlaylists() = jsonEngine.fetchPlaylists()
-
-    fun flowPlaylistItems(playlistId: Int): Flow<List<IListItemAll>> =
-        jsonEngine.playlistItems.map { it[playlistId] ?: emptyList() }
 
     suspend fun getAlbumDetails(id: Int): AudioDetailsAlbum? {
         return jsonEngine.post(
@@ -318,7 +305,7 @@ class Repository @Inject constructor(
                     AudioFieldsAlbum.Year,
                 )
             )
-        )?.albumdetails
+        ).resultOrNull?.albumdetails
     }
 
     suspend fun getImageBitmap(path: String): ImageBitmap? {
@@ -365,10 +352,26 @@ class Repository @Inject constructor(
                     VideoFieldsMovie.Year,
                 ),
             )
-        )?.moviedetails
+        ).resultOrNull?.moviedetails
     }
 
-    suspend fun getPlaylists() = jsonEngine.post(PlaylistGetPlaylists())
+    suspend fun getPlaylistItems(playlistId: Int): List<ListItemAll> = jsonEngine.post(
+        PlaylistGetItems(
+            playlistId = playlistId,
+            properties = listOf(
+                ListFieldsAll.Artist,
+                ListFieldsAll.CustomProperties,
+                ListFieldsAll.Director,
+                ListFieldsAll.Duration,
+                ListFieldsAll.File,
+                ListFieldsAll.Runtime,
+                ListFieldsAll.Thumbnail,
+                ListFieldsAll.Title,
+            ),
+        )
+    ).resultOrNull?.items ?: emptyList()
+
+    suspend fun getPlaylists() = jsonEngine.post(PlaylistGetPlaylists()).resultOrNull
 
     suspend fun goToNextItem() = _playerId.value?.let {
         jsonEngine.post(PlayerGoTo(playerId = it, to = PlayerGoTo.To.Next))
@@ -390,7 +393,10 @@ class Repository @Inject constructor(
     suspend fun increaseVolume() =
         jsonEngine.post(ApplicationSetVolume(type = ApplicationSetVolume.ParamType.Increment))
 
-    suspend fun listAlbums(filter: ListFilterAlbums? = null): List<AudioDetailsAlbum>? = jsonEngine.post(
+    suspend fun listAlbums(
+        filter: ListFilterAlbums? = null,
+        sort: ListSort? = ListSort(method = ListSort.Method.Title),
+    ): List<AudioDetailsAlbum>? = jsonEngine.post(
         AudioLibraryGetAlbums(
             properties = listOf(
                 AudioFieldsAlbum.AlbumDuration,
@@ -402,9 +408,9 @@ class Repository @Inject constructor(
                 AudioFieldsAlbum.Year,
             ),
             filter = filter,
-            sort = ListSort(method = ListSort.Method.Title),
+            sort = sort,
         )
-    )?.albums
+    ).resultOrNull?.albums
 
     suspend fun listAlbumSongs(albumId: Int): List<AudioDetailsSong>? =
         listSongs(simpleFilter = AudioLibraryGetSongs.SimpleFilter(albumId = albumId))
@@ -412,7 +418,7 @@ class Repository @Inject constructor(
     suspend fun listMovies(
         simpleFilter: VideoLibraryGetMovies.SimpleFilter? = null,
         filter: ListFilterMovies? = null,
-        sort: ListSort? = null,
+        sort: ListSort? = ListSort(method = ListSort.Method.Title),
     ): List<VideoDetailsMovie>? =
         jsonEngine.post(
             VideoLibraryGetMovies(
@@ -431,9 +437,9 @@ class Repository @Inject constructor(
                 ),
                 simpleFilter = simpleFilter,
                 filter = filter,
-                sort = sort ?: ListSort(method = ListSort.Method.Title),
+                sort = sort,
             )
-        )?.movies
+        ).resultOrNull?.movies
 
     suspend fun listSongs(
         filter: ListFilterSongs? = null,
@@ -458,14 +464,14 @@ class Repository @Inject constructor(
             simpleFilter = simpleFilter,
             filter = filter,
         )
-    )?.songs
+    ).resultOrNull?.songs
 
     suspend fun openSubtitleSearch() = jsonEngine.post(GuiActivateWindow(window = GuiWindow.SubtitleSearch))
 
+    suspend fun playAlbum(albumId: Int) = jsonEngine.post(PlayerOpen.Item(albumId = albumId))
+
     suspend fun playerOpenPlaylist(playlistId: Int, position: Int? = null) =
         jsonEngine.post(PlayerOpen.Playlist(playlistId = playlistId, position = position))
-
-    suspend fun playAlbum(albumId: Int) = jsonEngine.post(PlayerOpen.Item(albumId = albumId))
 
     suspend fun playMovie(movieId: Int) = jsonEngine.post(PlayerOpen.Item(movieId = movieId))
 
@@ -485,7 +491,6 @@ class Repository @Inject constructor(
         _playerId.value?.also {
             launchOnIOThread {
                 jsonEngine.post(PlayerSeek(playerId = it, value = PlayerSeek.Value(percentage = progress * 100f)))
-                _isSeeking.value = false
             }
         }
     }
@@ -522,7 +527,7 @@ class Repository @Inject constructor(
     suspend fun stop() = _playerId.value?.let { jsonEngine.post(PlayerStop(playerId = it)) }
 
     suspend fun swapPlaylistPositions(playlistId: Int, from: Int, to: Int) =
-        jsonEngine.swapPlaylistPositions(playlistId, from, to)
+        jsonEngine.post(PlaylistSwap(playlistId = playlistId, position1 = from, position2 = to))
 
     suspend fun toggleShuffle() = _playerId.value?.let {
         jsonEngine.post(PlayerSetShuffle(playerId = it, shuffle = GlobalToggle.Toggle))
@@ -543,25 +548,28 @@ class Repository @Inject constructor(
 
     /** PRIVATE METHODS ***********************************************************************************************/
 
+    private suspend fun fetchGuiProperties() =
+        jsonEngine.post(GuiGetProperties(properties = listOf(GuiPropertyName.Fullscreen)))
+
     private suspend fun fetchPlayerItem(playerId: Int) {
-        jsonEngine.post(
-            PlayerGetItem(
-                playerId = playerId,
-                properties = listOf(
-                    ListFieldsAll.Album,
-                    ListFieldsAll.AlbumId,
-                    ListFieldsAll.Artist,
-                    ListFieldsAll.CustomProperties,
-                    ListFieldsAll.Director,
-                    ListFieldsAll.Duration,
-                    ListFieldsAll.Fanart,
-                    ListFieldsAll.File,
-                    ListFieldsAll.Runtime,
-                    ListFieldsAll.Thumbnail,
-                    ListFieldsAll.Title,
-                ),
+        val request = PlayerGetItem(
+            playerId = playerId,
+            properties = listOf(
+                ListFieldsAll.Album,
+                ListFieldsAll.AlbumId,
+                ListFieldsAll.Artist,
+                ListFieldsAll.CustomProperties,
+                ListFieldsAll.Director,
+                ListFieldsAll.Duration,
+                ListFieldsAll.Fanart,
+                ListFieldsAll.File,
+                ListFieldsAll.Runtime,
+                ListFieldsAll.Thumbnail,
+                ListFieldsAll.Title,
             ),
         )
+
+        jsonEngine.post(request)
     }
 
     private suspend fun fetchPlayerProperties(playerId: Int) {
@@ -590,9 +598,6 @@ class Repository @Inject constructor(
         )
     }
 
-    private suspend fun fetchGuiProperties() =
-        jsonEngine.post(GuiGetProperties(properties = listOf(GuiPropertyName.Fullscreen)))
-
     private fun reset() {
         launchOnIOThread {
             jsonEngine.post(
@@ -609,6 +614,7 @@ class Repository @Inject constructor(
         }
         launchOnIOThread { jsonEngine.post(PlayerGetActivePlayers()) }
         launchOnIOThread { fetchGuiProperties() }
+        launchOnIOThread { jsonEngine.post(JsonRpcPermission()) }
     }
 
     private fun setPlayerElapsedTimeFromProgress(progress: Double) {
@@ -624,12 +630,10 @@ class Repository @Inject constructor(
             _playerId.value?.also {
                 launchOnIOThread {
                     fetchPlayerProperties(it)
-                    fetchPlayerItem(it)
+                    if (notification.method != "Player.OnStop") fetchPlayerItem(it)
+                    else _playerItem.value = null
                 }
             }
-        }
-        if (notification.data is PlayerOnStop) {
-            _playerItem.value = null
         }
         if (notification.method == "Player.OnAVChange") {
             launchOnIOThread { fetchGuiProperties() }
@@ -649,51 +653,57 @@ class Repository @Inject constructor(
             _playerId.value = notification.data.playerid
         }
         if (notification.data is IHasPlayerTime) {
-            notification.data.time?.totalMilliseconds?.also { _playerElapsedTime.value = it }
-            _isSeeking.value = false
+            if (!_isSeeking.value) notification.data.time?.totalMilliseconds?.also { _playerElapsedTime.value = it }
         }
     }
 
-    override fun onKodiResponse(response: KodiJsonRpcResponse<*>) {
-        if (response.request is ApplicationSetVolume && response.result is Int) {
-            _volume.value = response.result
+    override fun <Result : Any> onKodiRequestSucceeded(request: AbstractRequest<Result>, result: Result) {
+        if (request is ApplicationSetVolume && result is Int) {
+            _volume.value = result
         }
-        if (response.result is ApplicationGetProperties.Result) {
-            _volume.value = response.result.volume
-            _isMuted.value = response.result.muted
+        if (result is ApplicationGetProperties.Result) {
+            _volume.value = result.volume
+            _isMuted.value = result.muted
         }
-        if (response.result is IHasPlayerSpeed) {
-            response.result.speed?.also { _playerSpeed.value = it }
+        if (result is IHasPlayerSpeed) {
+            result.speed?.also { _playerSpeed.value = it }
         }
-        if (response.result is PlayerPropertyValue) {
-            _playerProperties.value = response.result
+        if (result is PlayerPropertyValue) {
+            _playerProperties.value = result
         }
-        if (response.result is IHasPlayerTotalTime) {
-            response.result.totaltime?.totalMilliseconds?.takeIf { it > 0 }?.also { _playerTotalTime.value = it }
+        if (result is IHasPlayerTotalTime) {
+            result.totaltime?.totalMilliseconds?.takeIf { it > 0 }?.also { _playerTotalTime.value = it }
         }
-        if (response.result is PlayerGetItem.Result) {
-            _playerItem.value = response.result.item
+        if (result is IHasPlayerId) {
+            _playerId.value = result.playerid
         }
-        if (response.result is IHasPlayerId) {
-            _playerId.value = response.result.playerid
-        }
-        if (response.method == "Player.GetActivePlayers") {
-            @Suppress("UNCHECKED_CAST")
-            (response.result as? Iterable<PlayerGetActivePlayers.ResultItem>)?.firstOrNull()?.also {
-                _playerId.value = it.playerid
+        if (result is IHasPlayerTime) {
+            if (request is PlayerSeek || !_isSeeking.value) {
+                result.time?.totalMilliseconds?.also { millis ->
+                    _playerElapsedTime.value = millis
+                    _isSeeking.value = false
+                }
             }
         }
-        if (response.result is IHasPlayerTime) {
-            response.result.time?.totalMilliseconds?.also { _playerElapsedTime.value = it }
-            _isSeeking.value = false
+        if (request is PlayerGetActivePlayers) {
+            request.result.firstOrNull()?.also { _playerId.value = it.playerid }
         }
-        if (response.request is PlayerSetSubtitle && !response.isError) {
+        if (request is PlayerGetItem) {
+            _playerItem.value = request.result.item.takeIf { it.stringId != null }
+        }
+        if (request is ApplicationSetVolume) {
+            _volume.value = request.result
+        }
+        if (request is PlayerSetSubtitle) {
             launchOnIOThread {
                 // Seems like there is some lag between setting subtitles and player properties being correctly
                 // updated, hence the ugly little arbitrary delay:
                 delay(500)
-                fetchPlayerProperties(playerId = response.request.playerId)
+                fetchPlayerProperties(playerId = request.playerId)
             }
+        }
+        if (request is JsonRpcPermission) {
+            _permissions.value = request.result
         }
     }
 }

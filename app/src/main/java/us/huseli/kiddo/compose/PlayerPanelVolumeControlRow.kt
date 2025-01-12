@@ -1,15 +1,9 @@
 package us.huseli.kiddo.compose
 
 import androidx.compose.foundation.layout.Row
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.sharp.Fullscreen
-import androidx.compose.material3.FilledIconToggleButton
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import us.huseli.kiddo.R
 import us.huseli.kiddo.compose.controls.AudioStreamMenuButton
 import us.huseli.kiddo.compose.controls.HorizontalVolumeControl
 import us.huseli.kiddo.compose.controls.SubtitleMenuButton
@@ -30,7 +24,7 @@ fun PlayerPanelVolumeControlRow(
     onDisableSubtitleClick: () -> Unit,
     onSetSubtitleClick: (Int) -> Unit,
     onSubtitleSearchClick: () -> Unit,
-    onSetAudioStreamClick: (Int) -> Unit
+    onSetAudioStreamClick: (Int) -> Unit,
 ) {
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         HorizontalVolumeControl(

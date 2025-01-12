@@ -46,7 +46,7 @@ fun CompactTextField(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     color: Color = MaterialTheme.colorScheme.onSurface,
-    textStyle: TextStyle = MaterialTheme.typography.labelLarge.copy(color = color),
+    textStyle: TextStyle = MaterialTheme.typography.bodyMedium.copy(color = color),
     placeholder: @Composable (() -> Unit)? = null,
     label: @Composable (() -> Unit)? = null,
     showClearIcon: Boolean = true,
@@ -121,18 +121,18 @@ fun CompactTextField(
                             Icon(
                                 imageVector = Icons.Sharp.Clear,
                                 contentDescription = null,
+                                tint = MaterialTheme.colorScheme.outline,
                                 modifier = Modifier
                                     .requiredSize(22.dp)
                                     .clickable {
                                         onValueChange("")
-                                    },
-                                tint = MaterialTheme.colorScheme.outline,
+                                    }
                             )
                         }
                     }
                     HorizontalDivider(
-                        modifier = Modifier.fillMaxWidth(),
                         color = if (isFocused) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.outlineVariant,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }

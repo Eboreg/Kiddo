@@ -1,9 +1,9 @@
 package us.huseli.kiddo.data.requests
 
-import us.huseli.kiddo.data.requests.interfaces.IRequestRefResult
+import us.huseli.kiddo.data.AbstractRefRequest
 import java.lang.reflect.Type
 
-class JsonRpcPermission : IRequestRefResult<JsonRpcPermission.Result> {
+class JsonRpcPermission : AbstractRefRequest<JsonRpcPermission.Result>() {
     override val typeOfResult: Type = Result::class.java
     override val method: String = "JSONRPC.Permission"
 

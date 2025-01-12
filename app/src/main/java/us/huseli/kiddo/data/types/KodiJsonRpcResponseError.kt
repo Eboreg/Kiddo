@@ -1,10 +1,12 @@
 package us.huseli.kiddo.data.types
 
+import us.huseli.kiddo.KodiError
+
 data class KodiJsonRpcResponseError(
     val code: Int,
     val data: Data?,
-    val message: String,
-) {
+    override val message: String,
+) : KodiError(message) {
     data class Data(
         val method: String,
         val stack: Stack,

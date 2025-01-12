@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
@@ -47,6 +48,7 @@ fun AlbumListScreen(
     val exception by viewModel.exception.collectAsStateWithLifecycle()
     val listSort by viewModel.listSort.collectAsStateWithLifecycle()
 
+    val focusRequester = remember { FocusRequester() }
     var isFilterDialogOpen by rememberSaveable { mutableStateOf(false) }
     var isSortDialogOpen by rememberSaveable { mutableStateOf(false) }
 
@@ -64,6 +66,7 @@ fun AlbumListScreen(
             onSubmit = { onSortAndFilter(route.applyListSort(it)) },
             onDismissRequest = { isSortDialogOpen = false },
             methods = listOf(
+                ListSort.Method.Artist to stringResource(R.string.artist),
                 ListSort.Method.Title to stringResource(R.string.title),
                 ListSort.Method.Year to stringResource(R.string.year),
                 ListSort.Method.Rating to stringResource(R.string.rating),
@@ -80,6 +83,10 @@ fun AlbumListScreen(
                     onFilterClick = { isFilterDialogOpen = true },
                     onSortClick = { isSortDialogOpen = true },
                     hasFilters = route.hasFilters(),
+                    showSearch = route.hasSearch(),
+                    freetext = route.freetext ?: "",
+                    onSearch = { onSortAndFilter(route.copy(freetext = it)) },
+                    focusRequester = focusRequester,
                 )
             }
 

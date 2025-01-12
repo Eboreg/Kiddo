@@ -20,24 +20,25 @@ class AlbumListViewModel @Inject constructor(
     private val repository: Repository,
     savedStateHandle: SavedStateHandle,
 ) : AbstractItemListViewModel<AudioDetailsAlbum>() {
+    private val _covers = MutableStateFlow<Map<Int, ImageBitmap?>>(emptyMap())
     private val _route = MutableStateFlow<Routes.AlbumList>(
         savedStateHandle.toRoute<Routes.AlbumList>()
     )
-    private val _filter = _route.map { it.getFilter() }
-    private val _covers = MutableStateFlow<Map<Int, ImageBitmap?>>(emptyMap())
 
     val albums = items
-    val route = _route.asStateFlow()
     val listSort = _route.map { it.getListSort() }.stateWhileSubscribed()
-
-    override fun getItemsFlow(): Flow<List<AudioDetailsAlbum>> {
-        return _filter.map { filter -> repository.listAlbums(filter = filter) ?: emptyList() }
-    }
+    val route = _route.asStateFlow()
 
     suspend fun getCover(album: IAudioDetailsAlbum): ImageBitmap? {
         if (_covers.value.containsKey(album.albumid)) return _covers.value[album.albumid]
         return album.art?.thumb?.takeIfNotBlank()
             ?.let { repository.getImageBitmap(it) }
             .also { _covers.value += album.albumid to it }
+    }
+
+    override fun getItemsFlow(): Flow<List<AudioDetailsAlbum>> {
+        return _route.map { route ->
+            repository.listAlbums(filter = route.getFilter(), sort = route.getListSort()) ?: emptyList()
+        }
     }
 }

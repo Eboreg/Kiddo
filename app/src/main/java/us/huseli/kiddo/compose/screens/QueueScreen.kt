@@ -17,7 +17,6 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import us.huseli.kiddo.Logger
 import us.huseli.kiddo.compose.screens.queue.QueueItemList
 import us.huseli.kiddo.data.enums.PlaylistType
 import us.huseli.kiddo.viewmodels.QueueViewModel
@@ -28,11 +27,6 @@ fun QueueScreen(viewModel: QueueViewModel = hiltViewModel()) {
     var currentPlaylistType by remember { mutableStateOf<PlaylistType>(PlaylistType.Video) }
     val currentPlaylist = remember(currentPlaylistType, playlists) { playlists.find { it.type == currentPlaylistType } }
     val currentItem by viewModel.currentItem.collectAsStateWithLifecycle()
-
-    Logger.log(
-        "QueueScreen",
-        "currentPlaylistType=$currentPlaylistType, currentPlaylist=$currentPlaylist, playlists=$playlists",
-    )
 
     Column(modifier = Modifier.fillMaxSize()) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {

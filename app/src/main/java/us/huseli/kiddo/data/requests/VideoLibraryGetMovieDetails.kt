@@ -1,14 +1,14 @@
 package us.huseli.kiddo.data.requests
 
+import us.huseli.kiddo.data.AbstractRefRequest
 import us.huseli.kiddo.data.enums.VideoFieldsMovie
-import us.huseli.kiddo.data.requests.interfaces.IRequestRefResult
 import us.huseli.kiddo.data.types.VideoDetailsMovie
 import java.lang.reflect.Type
 
 class VideoLibraryGetMovieDetails(
     val movieId: Int,
     val properties: List<VideoFieldsMovie> = emptyList(),
-) : IRequestRefResult<VideoLibraryGetMovieDetails.Result> {
+) : AbstractRefRequest<VideoLibraryGetMovieDetails.Result>() {
     override val typeOfResult: Type = Result::class.java
     override val method: String = "VideoLibrary.GetMovieDetails"
 

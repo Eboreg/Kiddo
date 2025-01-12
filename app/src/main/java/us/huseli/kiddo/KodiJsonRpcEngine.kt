@@ -5,7 +5,6 @@ import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -16,22 +15,18 @@ import us.huseli.kiddo.Constants.PREF_KODI_HOST
 import us.huseli.kiddo.Constants.PREF_KODI_PASSWORD
 import us.huseli.kiddo.Constants.PREF_KODI_PORT
 import us.huseli.kiddo.Constants.PREF_KODI_USERNAME
-import us.huseli.kiddo.data.KodiJsonRpcResponse
-import us.huseli.kiddo.data.enums.ListFieldsAll
-import us.huseli.kiddo.data.requests.PlaylistGetItems
-import us.huseli.kiddo.data.requests.PlaylistGetPlaylists
-import us.huseli.kiddo.data.requests.PlaylistSwap
-import us.huseli.kiddo.data.requests.interfaces.IRequest
-import us.huseli.kiddo.data.types.interfaces.IListItemAll
+import us.huseli.kiddo.data.AbstractRequest
 import us.huseli.retaintheme.utils.AbstractScopeHolder
 import us.huseli.retaintheme.utils.ILogger
+import java.net.SocketTimeoutException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 interface KodiResponseListener {
-    fun onKodiResponse(response: KodiJsonRpcResponse<*>)
+    fun <Result : Any> onKodiRequestSucceeded(request: AbstractRequest<Result>, result: Result)
+    fun onKodiRequestError(error: KodiError) {}
 }
 
 @OptIn(ExperimentalEncodingApi::class)
@@ -46,8 +41,6 @@ class KodiJsonRpcEngine @Inject constructor(@ApplicationContext context: Context
     private val _connectError = MutableStateFlow<KodiError?>(null)
     private val _hostname = MutableStateFlow<String?>(preferences.getString(PREF_KODI_HOST, null))
     private val _password = MutableStateFlow<String?>(preferences.getString(PREF_KODI_PASSWORD, null))
-    private val _playlistItems = MutableStateFlow<Map<Int, List<IListItemAll>>>(emptyMap())
-    private val _playlists = MutableStateFlow<List<PlaylistGetPlaylists.ResultItem>>(emptyList())
     private val _port = MutableStateFlow<Int>(preferences.getInt(PREF_KODI_PORT, 80))
     private val _username = MutableStateFlow<String?>(preferences.getString(PREF_KODI_USERNAME, null))
 
@@ -63,11 +56,10 @@ class KodiJsonRpcEngine @Inject constructor(@ApplicationContext context: Context
         else null
     }
     val connectError = _connectError.asStateFlow()
-    val connectErrorString = _connectError.map { it?.message ?: it?.toString() }.distinctUntilChanged()
+    @Suppress("DEPRECATION") val connectErrorString =
+        _connectError.map { it?.message ?: it?.toString() }.distinctUntilChanged()
     val hostname = _hostname.asStateFlow()
     val password = _password.asStateFlow()
-    val playlistItems = _playlistItems.asStateFlow()
-    val playlists: StateFlow<List<PlaylistGetPlaylists.ResultItem>> = _playlists.asStateFlow()
     val port = _port.asStateFlow()
     val username = _username.asStateFlow()
 
@@ -79,26 +71,19 @@ class KodiJsonRpcEngine @Inject constructor(@ApplicationContext context: Context
         listeners.add(listener)
     }
 
-    suspend fun fetchPlaylists() {
-        post(PlaylistGetPlaylists())?.also { playlists ->
-            _playlists.value = playlists
-
-            for (playlist in playlists) {
-                fetchPlaylistItems(playlist.playlistid)
-            }
-        }
-    }
-
-    suspend fun <Result> post(request: IRequest<Result>): Result? {
+    suspend fun <Result : Any, Request : AbstractRequest<Result>> post(request: Request): Request {
         rateLimitedRequestManager.cancelPending(request.method)
         return post(request, ++requestId)
     }
 
-    suspend fun <Result> postRateLimited(request: IRequest<Result>, minIntervalMs: Long): Result? {
+    suspend fun <Result : Any, Request : AbstractRequest<Result>> postRateLimited(
+        request: Request,
+        minIntervalMs: Long,
+    ) {
         val requestId = ++this.requestId
 
-        return rateLimitedRequestManager.run(
-            method = request.method,
+        rateLimitedRequestManager.run(
+            request = request,
             requestId = requestId,
             minIntervalMs = minIntervalMs,
         ) { post(request, requestId) }
@@ -109,53 +94,33 @@ class KodiJsonRpcEngine @Inject constructor(@ApplicationContext context: Context
         listeners.remove(listener)
     }
 
-    suspend fun swapPlaylistPositions(playlistId: Int, from: Int, to: Int) {
-        post(PlaylistSwap(playlistId = playlistId, position1 = from, position2 = to))
-        fetchPlaylistItems(playlistId)
-    }
+    private suspend fun getHeaders(): Map<String, String> =
+        authToken.first()?.let { mapOf("Authorization" to "Basic $it") } ?: emptyMap()
 
-    private suspend fun fetchPlaylistItems(playlistId: Int) {
-        val items = post(
-            PlaylistGetItems(
-                playlistId = playlistId,
-                properties = listOf(
-                    ListFieldsAll.Artist,
-                    ListFieldsAll.CustomProperties,
-                    ListFieldsAll.Director,
-                    ListFieldsAll.Duration,
-                    ListFieldsAll.File,
-                    ListFieldsAll.Runtime,
-                    ListFieldsAll.Thumbnail,
-                    ListFieldsAll.Title,
-                ),
-            )
-        )?.items
-
-        if (items != null) _playlistItems.value += playlistId to items
-    }
-
-    private suspend fun <Result> post(request: IRequest<Result>, requestId: Int): Result? {
+    private suspend fun <Result : Any, Request : AbstractRequest<Result>> post(
+        request: Request,
+        requestId: Int,
+    ): Request {
         val url = _url.filterNotNull().first()
-        val headers = authToken.first()?.let { mapOf("Authorization" to "Basic $it") } ?: emptyMap()
 
-        return try {
-            val response = request.post(
-                url = url,
-                requestId = requestId,
-                headers = headers
-            ).first()
-
-            listeners.forEach { it.onKodiResponse(response) }
-            response.result
+        try {
+            request.post(url = url, requestId = requestId, headers = getHeaders())
+            request.resultOrNull?.also { result ->
+                listeners.forEach { it.onKodiRequestSucceeded(request, result) }
+            }
         } catch (e: Throwable) {
-            val error =
-                if (e is KodiError) e
-                else KodiConnectionError(url = url, cause = e)
+            val error = when (e) {
+                is KodiError -> e
+                is SocketTimeoutException -> KodiConnectionTimeoutError(url, e)
+                else -> KodiConnectionError(url, e)
+            }
 
+            listeners.forEach { it.onKodiRequestError(error) }
             logError("post()", error)
             _connectError.value = error
-            null
         }
+
+        return request
     }
 
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {

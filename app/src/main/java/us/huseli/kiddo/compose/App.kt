@@ -29,6 +29,7 @@ import androidx.navigation.compose.rememberNavController
 import us.huseli.kiddo.compose.controls.InputTextDialog
 import us.huseli.kiddo.compose.screens.AlbumDetailsScreen
 import us.huseli.kiddo.compose.screens.AlbumListScreen
+import us.huseli.kiddo.compose.screens.DebugScreen
 import us.huseli.kiddo.compose.screens.MovieDetailsScreen
 import us.huseli.kiddo.compose.screens.MovieListScreen
 import us.huseli.kiddo.compose.screens.QueueScreen
@@ -142,6 +143,10 @@ fun App(viewModel: AppViewModel = hiltViewModel()) {
 
             composable<Routes.AlbumDetails> {
                 AlbumDetailsScreen(onAlbumListClick = { navController.navigate(it) })
+            }
+
+            composable<Routes.Debug> {
+                DebugScreen()
             }
         }
     }

@@ -1,12 +1,12 @@
 package us.huseli.kiddo.data.requests
 
 import com.google.gson.annotations.SerializedName
+import us.huseli.kiddo.data.AbstractRefRequest
 import us.huseli.kiddo.data.enums.ApplicationPropertyName
-import us.huseli.kiddo.data.requests.interfaces.IRequestRefResult
 import java.lang.reflect.Type
 
 class ApplicationGetProperties(val properties: List<ApplicationPropertyName>) :
-    IRequestRefResult<ApplicationGetProperties.Result> {
+    AbstractRefRequest<ApplicationGetProperties.Result>() {
     override val method: String = "Application.GetProperties"
     override val typeOfResult: Type = Result::class.java
 

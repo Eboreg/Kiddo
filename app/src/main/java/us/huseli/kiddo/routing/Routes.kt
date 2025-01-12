@@ -5,13 +5,16 @@ import us.huseli.kiddo.data.AlbumFilterState
 import us.huseli.kiddo.data.MovieFilterState
 import us.huseli.kiddo.data.enums.ListFilterFieldsAlbums
 import us.huseli.kiddo.data.enums.ListFilterFieldsMovies
+import us.huseli.kiddo.data.enums.ListFilterOperators
 import us.huseli.kiddo.data.types.ListFilterAlbums
 import us.huseli.kiddo.data.types.ListFilterMovies
 import us.huseli.kiddo.data.types.ListSort
+import us.huseli.kiddo.takeIfNotBlank
 
 interface IMediaListRoute {
     val sortMethod: ListSort.Method?
     val descending: Boolean?
+    val freetext: String?
 
     fun getListSort(): ListSort? = sortMethod?.let {
         ListSort(
@@ -21,6 +24,7 @@ interface IMediaListRoute {
     }
 
     fun hasFilters(): Boolean
+    fun hasSearch(): Boolean
 }
 
 @Serializable
@@ -41,6 +45,9 @@ sealed class Routes {
     data object Queue : Routes()
 
     @Serializable
+    data object Debug : Routes()
+
+    @Serializable
     data class AlbumList(
         val artist: String? = null,
         val genre: String? = null,
@@ -48,6 +55,7 @@ sealed class Routes {
         val style: String? = null,
         val theme: String? = null,
         val album: String? = null,
+        override val freetext: String? = null,
         override val sortMethod: ListSort.Method? = ListSort.Method.Title,
         override val descending: Boolean? = null,
     ) : Routes(), IMediaListRoute {
@@ -62,23 +70,41 @@ sealed class Routes {
             style = state.style,
         )
 
-        fun getFilter(): ListFilterAlbums? = ListFilterAlbums.and(
-            genre?.let { ListFilterAlbums(value = it, field = ListFilterFieldsAlbums.Genre) },
-            artist?.let {
-                ListFilterAlbums(
-                    or = listOf(
-                        ListFilterAlbums(value = it, field = ListFilterFieldsAlbums.Artist),
-                        ListFilterAlbums(value = it, field = ListFilterFieldsAlbums.AlbumArtist),
+        fun getFilter(): ListFilterAlbums? {
+            val filters = listOf(
+                genre?.let { ListFilterAlbums(it, ListFilterFieldsAlbums.Genre) },
+                artist?.let {
+                    ListFilterAlbums(
+                        or = listOf(
+                            ListFilterAlbums(it, ListFilterFieldsAlbums.Artist),
+                            ListFilterAlbums(it, ListFilterFieldsAlbums.AlbumArtist),
+                        )
                     )
+                },
+                year?.let { ListFilterAlbums(it, ListFilterFieldsAlbums.Year) },
+                style?.let { ListFilterAlbums(it, ListFilterFieldsAlbums.Styles) },
+                theme?.let { ListFilterAlbums(it, ListFilterFieldsAlbums.Themes) },
+                album?.let { ListFilterAlbums(it, ListFilterFieldsAlbums.Album) },
+            )
+
+            if (freetext?.takeIfNotBlank() != null) {
+                return ListFilterAlbums.and(
+                    *filters.toTypedArray(),
+                    ListFilterAlbums.or(
+                        ListFilterAlbums(freetext, ListFilterFieldsAlbums.Album, ListFilterOperators.Contains),
+                        ListFilterAlbums(freetext, ListFilterFieldsAlbums.AlbumArtist, ListFilterOperators.Contains),
+                        ListFilterAlbums(freetext, ListFilterFieldsAlbums.Artist, ListFilterOperators.Contains),
+                        ListFilterAlbums(freetext, ListFilterFieldsAlbums.Genre, ListFilterOperators.Contains),
+                        ListFilterAlbums(freetext, ListFilterFieldsAlbums.Year, ListFilterOperators.Contains),
+                    ),
                 )
-            },
-            year?.let { ListFilterAlbums(value = it, field = ListFilterFieldsAlbums.Year) },
-            style?.let { ListFilterAlbums(value = it, field = ListFilterFieldsAlbums.Styles) },
-            theme?.let { ListFilterAlbums(value = it, field = ListFilterFieldsAlbums.Themes) },
-            album?.let { ListFilterAlbums(value = it, field = ListFilterFieldsAlbums.Album) },
-        )
+            }
+
+            return ListFilterAlbums.and(filters)
+        }
 
         override fun hasFilters() = listOfNotNull(artist, genre, year, style, theme, album).isNotEmpty()
+        override fun hasSearch() = freetext?.takeIfNotBlank() != null
     }
 
     @Serializable
@@ -88,6 +114,7 @@ sealed class Routes {
         val year: String? = null,
         val country: String? = null,
         val title: String? = null,
+        override val freetext: String? = null,
         override val sortMethod: ListSort.Method? = ListSort.Method.Title,
         override val descending: Boolean? = null,
     ) : Routes(), IMediaListRoute {
@@ -102,22 +129,40 @@ sealed class Routes {
             title = state.title,
         )
 
-        fun getFilter(): ListFilterMovies? = ListFilterMovies.and(
-            genre?.let { ListFilterMovies(value = it, field = ListFilterFieldsMovies.Genre) },
-            person?.let {
-                ListFilterMovies(
-                    or = listOf(
-                        ListFilterMovies(value = it, field = ListFilterFieldsMovies.Director),
-                        ListFilterMovies(value = it, field = ListFilterFieldsMovies.Actor),
-                        ListFilterMovies(value = it, field = ListFilterFieldsMovies.Writers),
+        fun getFilter(): ListFilterMovies? {
+            val filters = listOf(
+                genre?.let { ListFilterMovies(value = it, field = ListFilterFieldsMovies.Genre) },
+                person?.let {
+                    ListFilterMovies(
+                        or = listOf(
+                            ListFilterMovies(value = it, field = ListFilterFieldsMovies.Director),
+                            ListFilterMovies(value = it, field = ListFilterFieldsMovies.Actor),
+                            ListFilterMovies(value = it, field = ListFilterFieldsMovies.Writers),
+                        )
+                    )
+                },
+                year?.let { ListFilterMovies(value = it, field = ListFilterFieldsMovies.Year) },
+                country?.let { ListFilterMovies(value = it, field = ListFilterFieldsMovies.Country) },
+                title?.let { ListFilterMovies(value = it, field = ListFilterFieldsMovies.Title) },
+            )
+
+            if (freetext?.takeIfNotBlank() != null) {
+                return ListFilterMovies.and(
+                    *filters.toTypedArray(),
+                    ListFilterMovies.or(
+                        ListFilterMovies(freetext, ListFilterFieldsMovies.Director, ListFilterOperators.Contains),
+                        ListFilterMovies(freetext, ListFilterFieldsMovies.Title, ListFilterOperators.Contains),
+                        ListFilterMovies(freetext, ListFilterFieldsMovies.Actor, ListFilterOperators.Contains),
+                        ListFilterMovies(freetext, ListFilterFieldsMovies.Writers, ListFilterOperators.Contains),
+                        ListFilterMovies(freetext, ListFilterFieldsMovies.Year, ListFilterOperators.Contains),
                     )
                 )
-            },
-            year?.let { ListFilterMovies(value = it, field = ListFilterFieldsMovies.Year) },
-            country?.let { ListFilterMovies(value = it, field = ListFilterFieldsMovies.Country) },
-            title?.let { ListFilterMovies(value = it, field = ListFilterFieldsMovies.Title) },
-        )
+            }
+
+            return ListFilterMovies.and(filters)
+        }
 
         override fun hasFilters() = listOfNotNull(person, genre, year, country, title).isNotEmpty()
+        override fun hasSearch() = freetext?.takeIfNotBlank() != null
     }
 }

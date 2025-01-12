@@ -2,15 +2,15 @@ package us.huseli.kiddo.data.requests
 
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
+import us.huseli.kiddo.data.AbstractRefRequest
 import us.huseli.kiddo.data.interfaces.IHasPlayerId
-import us.huseli.kiddo.data.requests.interfaces.IRequestNoParams
-import us.huseli.kiddo.data.requests.interfaces.IRequestRefResult
 import java.lang.reflect.Type
 
-class PlayerGetActivePlayers() : IRequestRefResult<List<PlayerGetActivePlayers.ResultItem>>,
-    IRequestNoParams<List<PlayerGetActivePlayers.ResultItem>> {
+class PlayerGetActivePlayers() : AbstractRefRequest<List<PlayerGetActivePlayers.ResultItem>>() {
     override val method: String = "Player.GetActivePlayers"
     override val typeOfResult: Type = TypeToken.getParameterized(ArrayList::class.java, ResultItem::class.java).type
+
+    override fun getParams(): Map<String, Any?> = emptyMap()
 
     data class ResultItem(
         override val playerid: Int,

@@ -1,13 +1,13 @@
 package us.huseli.kiddo.data.requests
 
 import com.google.gson.annotations.SerializedName
+import us.huseli.kiddo.data.AbstractStringRequest
 import us.huseli.kiddo.data.enums.PlayerRepeat
-import us.huseli.kiddo.data.requests.interfaces.IRequestStringResult
 import us.huseli.kiddo.data.types.PlayerPositionTime
 import us.huseli.kiddo.data.types.PlaylistItem
 import us.huseli.retaintheme.extensions.filterValuesNotNull
 
-abstract class AbstractPlayerOpen(val options: Options? = null) : IRequestStringResult {
+abstract class AbstractPlayerOpen(val options: Options? = null) : AbstractStringRequest() {
     override val method: String = "Player.Open"
 
     override fun getParams(): Map<String, Any?> {

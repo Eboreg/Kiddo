@@ -48,7 +48,6 @@ fun LazyGridScope.MovieDetailsCast(
     modifier: Modifier = Modifier,
     memberModifier: Modifier = Modifier,
     onMovieListClick: (Routes.MovieList) -> Unit,
-    // onMovieListClick: (MovieListDestination.Route) -> Unit,
 ) {
     item(span = { GridItemSpan(maxLineSpan) }) {
         Text(stringResource(R.string.cast), style = headlineStyle, modifier = modifier)
@@ -65,7 +64,6 @@ fun LazyGridScope.MovieDetailsCast(
         Card(
             modifier = memberModifier.clickable {
                 onMovieListClick(Routes.MovieList(person = member.name))
-                // onMovieListClick(MovieListDestination.Route(person = member.name))
             },
             shape = MaterialTheme.shapes.extraSmall,
             colors = CardDefaults.cardColors(containerColor = background),
@@ -103,7 +101,7 @@ fun LazyGridScope.MovieDetailsCast(
                         Text(
                             member.role,
                             style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
                         )
                         Text(member.name, style = MaterialTheme.typography.bodySmall)
                     }

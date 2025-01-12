@@ -1,8 +1,9 @@
 package us.huseli.kiddo.data.requests
 
-import us.huseli.kiddo.data.requests.interfaces.IRequestNoParams
-import us.huseli.kiddo.data.requests.interfaces.IRequestStringResult
+import us.huseli.kiddo.data.AbstractStringRequest
 
-class InputKeyPress(key: String) : IRequestStringResult, IRequestNoParams<String> {
+class InputKeyPress(key: String) : AbstractStringRequest() {
     override val method: String = "Input.$key"
+
+    override fun getParams(): Map<String, Any?> = emptyMap()
 }

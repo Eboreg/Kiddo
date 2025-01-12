@@ -1,7 +1,7 @@
 package us.huseli.kiddo.data.requests
 
+import us.huseli.kiddo.data.AbstractRefRequest
 import us.huseli.kiddo.data.enums.AudioFieldsAlbum
-import us.huseli.kiddo.data.requests.interfaces.IRequestRefResult
 import us.huseli.kiddo.data.types.AudioDetailsAlbum
 import us.huseli.kiddo.data.types.ListFilterAlbums
 import us.huseli.kiddo.data.types.ListLimits
@@ -17,7 +17,7 @@ class AudioLibraryGetAlbums(
     val filter: ListFilterAlbums? = null,
     val includeSingles: Boolean? = null,
     val allRoles: Boolean? = null,
-) : IRequestRefResult<AudioLibraryGetAlbums.Result> {
+) : AbstractRefRequest<AudioLibraryGetAlbums.Result>() {
     override val typeOfResult: Type = Result::class.java
     override val method: String = "AudioLibrary.GetAlbums"
 

@@ -34,6 +34,8 @@ interface KodiNotificationListener {
 @Singleton
 class KodiWebsocketEngine @Inject constructor(@ApplicationContext context: Context) :
     SharedPreferences.OnSharedPreferenceChangeListener, AbstractScopeHolder(), ILogger {
+    enum class Status { Pending, Connecting, Connected, NoHostname, Error }
+
     private val listeners = mutableSetOf<KodiNotificationListener>()
     private val preferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
@@ -44,28 +46,34 @@ class KodiWebsocketEngine @Inject constructor(@ApplicationContext context: Conte
         hostname?.let { "ws://$it:$port/jsonrpc" }
     }
     private val _consecutiveErrorCount = MutableStateFlow(0)
+    private val _status = MutableStateFlow(Status.Pending)
 
     val connectError = _connectError.asStateFlow()
-    val connectErrorString = _connectError.map { it?.message ?: it?.toString() }.distinctUntilChanged()
+    @Suppress("DEPRECATION") val connectErrorString = _connectError.map { it?.toString() }.distinctUntilChanged()
     val port = _port.asStateFlow()
+    val status = _status.asStateFlow()
 
     init {
         preferences.registerOnSharedPreferenceChangeListener(this)
 
-        launchOnMainThread {
+        launchOnIOThread {
+            if (_hostname.value == null) _status.value = Status.NoHostname
+
             _url.filterNotNull().collectLatest { url ->
                 while (true) {
                     val client = HttpClient(CIO) { install(WebSockets) }
 
+                    _status.value = Status.Connecting
                     try {
                         client.webSocket(url) {
                             _connectError.value = null
+                            _status.value = Status.Connected
 
                             while (isActive) {
                                 val frame = try {
                                     (incoming.receiveCatching().getOrNull() as? Frame.Text) ?: break
                                 } catch (e: Throwable) {
-                                    throw KodiWebsocketReceiveError(url = url, cause = e)
+                                    throw KodiWebsocketReceiveError(url, e)
                                 }
 
                                 Notification.fromJson(frame.readText())?.also { notification ->
@@ -76,9 +84,10 @@ class KodiWebsocketEngine @Inject constructor(@ApplicationContext context: Conte
                         }
                     } catch (e: Throwable) {
                         val error =
-                            if (e !is KodiError) KodiConnectionError(url = url, cause = e)
+                            if (e !is KodiError) KodiConnectionError(url, e)
                             else e
 
+                        _status.value = Status.Error
                         _consecutiveErrorCount.value++
                         logError("client.webSocket()", error)
                         if (error !is KodiWebsocketReceiveError) {

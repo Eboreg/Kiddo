@@ -31,6 +31,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -44,6 +45,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -111,11 +113,9 @@ fun PlayerPanel(
     val expandProgress by remember {
         derivedStateOf { draggableState.progress(PanelCollapseStatus.Collapsed, PanelCollapseStatus.Expanded) }
     }
-
     val height by remember {
         derivedStateOf { with(density) { (expandedMaxHeight - draggableState.offset).toDp() } }
     }
-
     val columnPadding by remember { derivedStateOf { 10.dp * expandProgress } }
     val thumbnailHeight by remember { derivedStateOf { 70.dp + (30.dp * expandProgress) } }
     val expandedContentAlpha by remember { derivedStateOf { sqrt(expandProgress) } }
@@ -140,7 +140,7 @@ fun PlayerPanel(
                 if (collapsible) Modifier.anchoredDraggable(state = draggableState, orientation = Orientation.Vertical)
                 else Modifier
             ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.75f),
         ),
@@ -164,22 +164,27 @@ fun PlayerPanel(
                         .fillMaxHeight()
                         .aspectRatio(1f)
                 ) {
-                    thumbnail?.also {
-                        Image(
-                            bitmap = it,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    } ?: run {
-                        Icon(
-                            imageVector = Icons.Outlined.ImageNotSupported,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier
-                                .fillMaxSize(0.8f)
-                                .align(Alignment.Center),
-                        )
+                    Surface(
+                        shape = if (isCollapsed) RectangleShape else MaterialTheme.shapes.extraSmall,
+                        color = Color.Transparent,
+                    ) {
+                        thumbnail?.also {
+                            Image(
+                                bitmap = it,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        } ?: run {
+                            Icon(
+                                imageVector = Icons.Outlined.ImageNotSupported,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .fillMaxSize(0.8f)
+                                    .align(Alignment.Center),
+                            )
+                        }
                     }
                 }
 

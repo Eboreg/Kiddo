@@ -1,14 +1,14 @@
 package us.huseli.kiddo.data.requests
 
+import us.huseli.kiddo.data.AbstractRefRequest
 import us.huseli.kiddo.data.enums.ListFieldsAll
-import us.huseli.kiddo.data.requests.interfaces.IRequestRefResult
 import us.huseli.kiddo.data.types.ListItemAll
 import java.lang.reflect.Type
 
 class PlayerGetItem(
     val playerId: Int,
     val properties: List<ListFieldsAll>,
-) : IRequestRefResult<PlayerGetItem.Result> {
+) : AbstractRefRequest<PlayerGetItem.Result>() {
     override val method: String = "Player.GetItem"
     override val typeOfResult: Type = Result::class.java
 

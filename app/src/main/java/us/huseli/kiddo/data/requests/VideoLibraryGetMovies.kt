@@ -1,7 +1,7 @@
 package us.huseli.kiddo.data.requests
 
+import us.huseli.kiddo.data.AbstractRefRequest
 import us.huseli.kiddo.data.enums.VideoFieldsMovie
-import us.huseli.kiddo.data.requests.interfaces.IRequestRefResult
 import us.huseli.kiddo.data.types.ListFilterMovies
 import us.huseli.kiddo.data.types.ListLimits
 import us.huseli.kiddo.data.types.ListLimitsReturned
@@ -17,7 +17,7 @@ class VideoLibraryGetMovies(
     val sort: ListSort? = null,
     val simpleFilter: SimpleFilter? = null,
     val filter: ListFilterMovies? = null,
-) : IRequestRefResult<VideoLibraryGetMovies.Result> {
+) : AbstractRefRequest<VideoLibraryGetMovies.Result>() {
     override val typeOfResult: Type = Result::class.java
     override val method: String = "VideoLibrary.GetMovies"
 

@@ -25,7 +25,9 @@ class MovieDetailsViewModel @Inject constructor(
     private val _actorPortraits = MutableStateFlow<Map<String, ImageBitmap?>>(emptyMap())
     private val _error = MutableStateFlow<String?>(null)
     private val _movieId = savedStateHandle.toRoute<Routes.MovieDetails>().movieId
-    private val _movieDetails = flow<VideoDetailsMovie> {
+    private val _loading = MutableStateFlow(true)
+
+    val movieDetails = flow<VideoDetailsMovie> {
         try {
             val details = repository.getMovieDetails(_movieId)
 
@@ -38,19 +40,17 @@ class MovieDetailsViewModel @Inject constructor(
         } finally {
             _loading.value = false
         }
-    }
-    private val _loading = MutableStateFlow(true)
+    }.stateWhileSubscribed(VideoDetailsMovie(label = "", movieid = _movieId))
 
     val error = _error.asStateFlow()
-    val movieDetails = _movieDetails.stateWhileSubscribed(VideoDetailsMovie(label = "", movieid = _movieId))
-    val banner = _movieDetails.map { details ->
+    val banner = movieDetails.map { details ->
         val path = details.art?.fanart?.takeIfNotBlank()
             ?: details.fanart?.takeIfNotBlank()
             ?: details.art?.banner?.takeIfNotBlank()
 
         path?.let { repository.getImageBitmap(it) }
     }.stateWhileSubscribed()
-    val poster = _movieDetails.map { details ->
+    val poster = movieDetails.map { details ->
         details.art?.poster?.takeIfNotBlank()?.let { repository.getImageBitmap(it) }
     }.stateWhileSubscribed()
     val loading = _loading.asStateFlow()
@@ -60,7 +60,7 @@ class MovieDetailsViewModel @Inject constructor(
         return repository.getImageBitmap(path).also { _actorPortraits.value += path to it }
     }
 
-    fun enqueue() = launchOnIOThread { repository.enqueueMovie(_movieDetails.first()) }
+    fun enqueue() = launchOnIOThread { repository.enqueueMovie(movieDetails.first()) }
 
     fun play() = launchOnIOThread { repository.playMovie(_movieId) }
 }

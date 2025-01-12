@@ -24,7 +24,12 @@ class AlbumDetailsViewModel @Inject constructor(
 ) : AbstractBaseViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     private val _albumId = savedStateHandle.toRoute<Routes.AlbumDetails>().albumId
-    private val _albumDetails = flow<AudioDetailsAlbum> {
+    private val _loading = MutableStateFlow(true)
+
+    val songs = flow<List<AudioDetailsSong>> {
+        repository.listAlbumSongs(_albumId)?.also { emit(it) }
+    }.stateWhileSubscribed(emptyList())
+    val albumDetails = flow<AudioDetailsAlbum> {
         try {
             val details = repository.getAlbumDetails(_albumId)
 
@@ -37,29 +42,23 @@ class AlbumDetailsViewModel @Inject constructor(
         } finally {
             _loading.value = false
         }
-    }
-    private val _songs = flow<List<AudioDetailsSong>> {
-        repository.listAlbumSongs(_albumId)?.also { emit(it) }
-    }
-    private val _loading = MutableStateFlow(true)
+    }.stateWhileSubscribed(AudioDetailsAlbum(albumid = _albumId, label = ""))
 
-    val albumDetails = _albumDetails.stateWhileSubscribed(AudioDetailsAlbum(albumid = _albumId, label = ""))
     val error = _error.asStateFlow()
     val loading = _loading.asStateFlow()
-    val cover = _albumDetails.map { details ->
+    val cover = albumDetails.map { details ->
         val path = details.art?.thumb?.takeIfNotBlank() ?: details.thumbnail?.takeIfNotBlank()
         path?.let { repository.getImageBitmap(it) }
     }.stateWhileSubscribed()
-    val banner = _albumDetails.map { details ->
+    val banner = albumDetails.map { details ->
         val path = details.art?.banner?.takeIfNotBlank()
             ?: details.art?.fanart?.takeIfNotBlank()
             ?: details.fanart?.takeIfNotBlank()
 
         path?.let { repository.getImageBitmap(it) }
     }.stateWhileSubscribed()
-    val songs = _songs.stateWhileSubscribed(emptyList())
 
-    fun enqueue() = launchOnIOThread { repository.enqueueAlbum(_albumDetails.first()) }
+    fun enqueue() = launchOnIOThread { repository.enqueueAlbum(albumDetails.first()) }
 
     fun play() = launchOnIOThread { repository.playAlbum(_albumId) }
 

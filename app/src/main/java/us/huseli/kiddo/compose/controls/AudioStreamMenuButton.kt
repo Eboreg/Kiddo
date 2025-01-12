@@ -6,6 +6,7 @@ import androidx.compose.material.icons.sharp.Headphones
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
@@ -20,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import us.huseli.kiddo.R
 import us.huseli.kiddo.data.types.PlayerPropertyValue
+import us.huseli.kiddo.takeIfNotEmpty
 
 @Composable
 fun AudioStreamMenuButton(properties: PlayerPropertyValue?, onSetStreamClick: (Int) -> Unit) {
@@ -35,24 +37,27 @@ fun AudioStreamMenuButton(properties: PlayerPropertyValue?, onSetStreamClick: (I
         onDismissRequest = { isMenuOpen = false },
     ) {
         DropdownMenuItem(
-            text = { Text(stringResource(R.string.audio_stream), style = MaterialTheme.typography.headlineSmall) },
+            text = { Text(stringResource(R.string.audio_stream), style = MaterialTheme.typography.titleMedium) },
             onClick = {},
             enabled = false,
             colors = MenuDefaults.itemColors(disabledTextColor = MaterialTheme.colorScheme.onSurface),
         )
-        properties?.audiostreams?.forEach { stream ->
-            DropdownMenuItem(
-                text = { Text(stream.displayName) },
-                onClick = {
-                    onSetStreamClick(stream.index)
-                    isMenuOpen = false
-                },
-                modifier = Modifier.background(
-                    if (stream.index == properties.currentaudiostream?.index)
-                        MaterialTheme.colorScheme.primaryContainer
-                    else Color.Unspecified,
-                ),
-            )
+        properties?.audiostreams?.takeIfNotEmpty()?.also { streams ->
+            HorizontalDivider()
+            for (stream in streams) {
+                DropdownMenuItem(
+                    text = { Text(stream.displayName) },
+                    onClick = {
+                        onSetStreamClick(stream.index)
+                        isMenuOpen = false
+                    },
+                    modifier = Modifier.background(
+                        if (stream.index == properties.currentaudiostream?.index)
+                            MaterialTheme.colorScheme.primaryContainer
+                        else Color.Unspecified,
+                    ),
+                )
+            }
         }
     }
 }

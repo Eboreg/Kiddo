@@ -1,10 +1,8 @@
 package us.huseli.kiddo.data.requests
 
-import us.huseli.kiddo.data.requests.interfaces.IRequestIntResult
+import us.huseli.kiddo.data.AbstractIntRequest
 
-class ApplicationSetVolume(val type: ParamType, val volume: Int? = null) : IRequestIntResult {
-    constructor(volume: Int) : this(type = ParamType.Absolute, volume = volume)
-
+class ApplicationSetVolume(val type: ParamType = ParamType.Absolute, val volume: Int? = null) : AbstractIntRequest() {
     override val method: String = "Application.SetVolume"
 
     override fun getParams(): Map<String, Any?> {

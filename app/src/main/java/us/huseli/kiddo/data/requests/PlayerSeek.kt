@@ -1,16 +1,16 @@
 package us.huseli.kiddo.data.requests
 
 import com.google.gson.annotations.SerializedName
+import us.huseli.kiddo.data.AbstractRefRequest
 import us.huseli.kiddo.data.interfaces.IHasPlayerTime
 import us.huseli.kiddo.data.interfaces.IHasPlayerTotalTime
-import us.huseli.kiddo.data.requests.interfaces.IRequestRefResult
 import us.huseli.kiddo.data.types.GlobalTime
 import java.lang.reflect.Type
 
 class PlayerSeek(
     val playerId: Int,
     val value: Value,
-) : IRequestRefResult<PlayerSeek.Result> {
+) : AbstractRefRequest<PlayerSeek.Result>() {
     override val method: String = "Player.Seek"
     override val typeOfResult: Type = Result::class.java
 

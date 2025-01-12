@@ -6,6 +6,7 @@ import androidx.compose.material.icons.sharp.Subtitles
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -46,13 +47,12 @@ fun SubtitleMenuButton(
         onDismissRequest = { isMenuOpen = false },
     ) {
         DropdownMenuItem(
-            text = {
-                Text(stringResource(R.string.subtitles), style = MaterialTheme.typography.headlineSmall)
-            },
+            text = { Text(stringResource(R.string.subtitles)) },
             onClick = {},
             enabled = false,
             colors = MenuDefaults.itemColors(disabledTextColor = MaterialTheme.colorScheme.onSurface),
         )
+        HorizontalDivider()
         DropdownMenuItem(
             text = { Text(stringResource(R.string.search_ellipsis)) },
             onClick = {

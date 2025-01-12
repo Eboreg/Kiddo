@@ -1,6 +1,6 @@
 package us.huseli.kiddo.data.requests
 
-import us.huseli.kiddo.data.requests.interfaces.IRequestRefResult
+import us.huseli.kiddo.data.AbstractRefRequest
 import us.huseli.kiddo.data.types.PlayerTempo
 import java.lang.reflect.Type
 
@@ -8,7 +8,7 @@ class PlayerSetTempo(
     val playerId: Int,
     val type: ParamType,
     val tempo: Double? = null,
-) : IRequestRefResult<PlayerTempo> {
+) : AbstractRefRequest<PlayerTempo>() {
     override val typeOfResult: Type = PlayerTempo::class.java
     override val method: String = "Player.SetTempo"
 

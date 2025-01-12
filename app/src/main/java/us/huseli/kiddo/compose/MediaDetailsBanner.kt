@@ -97,7 +97,7 @@ fun MediaDetailsBanner(
                     Column {
                         rating?.takeIf { it > 0.0 }?.also { rating ->
                             RatingStars(rating)
-                            votes?.also {
+                            votes?.takeIf { it != "-1" }?.also {
                                 Text(
                                     text = stringResource(R.string.x_votes, it),
                                     style = MaterialTheme.typography.bodySmall,

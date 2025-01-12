@@ -1,12 +1,12 @@
 package us.huseli.kiddo.data.requests
 
-import us.huseli.kiddo.data.requests.interfaces.IRequestStringResult
+import us.huseli.kiddo.data.AbstractStringRequest
 
 class PlayerSetAudioStream(
     val playerId: Int,
     val stream: Stream = Stream.Absolute,
     val streamIndex: Int? = null,
-) : IRequestStringResult {
+) : AbstractStringRequest() {
     override val method: String = "Player.SetAudioStream"
 
     override fun getParams(): Map<String, Any?> {

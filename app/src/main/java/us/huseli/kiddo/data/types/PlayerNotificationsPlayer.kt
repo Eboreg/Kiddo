@@ -4,4 +4,3 @@ data class PlayerNotificationsPlayer(
     val playerid: Int,
     val speed: Int?,
 )
-

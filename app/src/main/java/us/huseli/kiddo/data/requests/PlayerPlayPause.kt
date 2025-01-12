@@ -1,14 +1,14 @@
 package us.huseli.kiddo.data.requests
 
+import us.huseli.kiddo.data.AbstractRefRequest
 import us.huseli.kiddo.data.enums.GlobalToggle
 import us.huseli.kiddo.data.interfaces.IHasPlayerSpeed
-import us.huseli.kiddo.data.requests.interfaces.IRequestRefResult
 import java.lang.reflect.Type
 
 class PlayerPlayPause(
     val playerId: Int,
     val play: GlobalToggle? = null,
-) : IRequestRefResult<PlayerPlayPause.Result> {
+) : AbstractRefRequest<PlayerPlayPause.Result>() {
     override val method: String = "Player.PlayPause"
     override val typeOfResult: Type = Result::class.java
 

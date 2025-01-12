@@ -1,12 +1,28 @@
 package us.huseli.kiddo
 
-open class KodiError(message: String, cause: Throwable? = null) : Exception(message, cause)
+import java.net.SocketTimeoutException
 
-class KodiConnectionError(
+open class KodiError(message: String?, cause: Throwable? = null) : Exception(message, cause) {
+    open val defaultMessage: String = "Unknown error"
+
+    override fun toString(): String = message ?: defaultMessage
+}
+
+@Suppress("CanBeParameter")
+open class KodiConnectionError(
     val url: String,
     cause: Throwable? = null,
-    message: String? = cause?.message,
-) : KodiError(message = "Error connecting to $url" + message?.let { ": $it" }, cause = cause)
+    message: String? = null,
+) : KodiError(message, cause) {
+    override val defaultMessage: String = "Error connecting to $url" + (cause?.message?.let { ": $it" } ?: "")
+}
 
-class KodiWebsocketReceiveError(val url: String, cause: Throwable) :
-    KodiError(message = "Error receiving from $url" + cause.message?.let { ": $it" }, cause = cause)
+class KodiConnectionTimeoutError(url: String, override val cause: SocketTimeoutException, message: String? = null) :
+    KodiConnectionError(url, cause, message) {
+    override val defaultMessage: String = "Connection timeout from $url: $cause"
+}
+
+class KodiWebsocketReceiveError(url: String, override val cause: Throwable, message: String? = null) :
+    KodiConnectionError(url, cause, message) {
+    override val defaultMessage: String = "Error receiving from $url" + (cause.message?.let { ": $it" } ?: "")
+}

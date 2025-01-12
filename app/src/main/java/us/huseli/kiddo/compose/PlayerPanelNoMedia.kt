@@ -14,10 +14,16 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import us.huseli.kiddo.KodiWebsocketEngine
 import us.huseli.kiddo.R
 
 @Composable
-fun PlayerPanelNoMedia(modifier: Modifier = Modifier, errors: List<String> = emptyList()) {
+fun PlayerPanelNoMedia(
+    modifier: Modifier = Modifier,
+    errors: List<String> = emptyList(),
+    hostname: String?,
+    status: KodiWebsocketEngine.Status,
+) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RectangleShape,
@@ -25,12 +31,42 @@ fun PlayerPanelNoMedia(modifier: Modifier = Modifier, errors: List<String> = emp
             containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.75f),
         ),
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            val statusText = when (status) {
+                KodiWebsocketEngine.Status.Pending -> stringResource(R.string.initializing_ellipsis)
+                KodiWebsocketEngine.Status.Connecting -> hostname?.let {
+                    stringResource(R.string.connecting_to_x, it)
+                }
+
+                KodiWebsocketEngine.Status.Connected -> hostname?.let {
+                    stringResource(R.string.connected_to_x, it)
+                }
+
+                KodiWebsocketEngine.Status.NoHostname -> stringResource(R.string.no_hostname_configured)
+                KodiWebsocketEngine.Status.Error -> null
+            }
+
+            statusText?.also {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
             if (errors.isNotEmpty()) {
                 for (error in errors) {
                     Text(error, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                 }
-            } else {
+            }
+
+            if (status == KodiWebsocketEngine.Status.Connected) {
                 Text(
                     text = stringResource(R.string.no_media_loaded),
                     style = MaterialTheme.typography.titleLarge,
