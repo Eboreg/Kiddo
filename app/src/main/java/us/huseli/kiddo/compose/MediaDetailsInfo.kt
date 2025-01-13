@@ -15,16 +15,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import us.huseli.kiddo.R
-import us.huseli.kiddo.sensibleFormat
 import us.huseli.retaintheme.extensions.takeIfNotEmpty
-import kotlin.time.Duration
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MediaDetailsInfo(
     headlineStyle: TextStyle,
-    personsLabel: String,
-    duration: Duration? = null,
+    personsLabel: String? = null,
+    duration: String? = null,
     year: String? = null,
     persons: Collection<String>? = null,
     genres: Collection<String>? = null,
@@ -43,14 +41,16 @@ fun MediaDetailsInfo(
     ) {
         Text(stringResource(R.string.information), style = headlineStyle)
 
-        duration?.sensibleFormat(withSeconds = false)?.also {
+        duration?.also {
             ItemInfoRow(stringResource(R.string.length), it)
         }
         year?.also {
             ItemInfoRow(stringResource(R.string.year), it.toString(), onYearClick)
         }
         persons?.takeIfNotEmpty()?.also { persons ->
-            ItemInfoRow(personsLabel, persons, onPersonClick)
+            personsLabel?.also {
+                ItemInfoRow(it, persons, onPersonClick)
+            }
         }
         countries?.takeIfNotEmpty()?.also { countries ->
             ItemInfoRow(stringResource(R.string.countries), countries, onCountryClick)
@@ -63,6 +63,7 @@ fun MediaDetailsInfo(
                 FlowRow(
                     horizontalArrangement = Arrangement.End,
                     verticalArrangement = Arrangement.spacedBy(5.dp),
+                    modifier = Modifier.padding(top = 4.dp),
                 ) {
                     for (tag in tags) {
                         Badge(

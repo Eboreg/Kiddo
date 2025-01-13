@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.sharp.Album
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,17 +19,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import us.huseli.kiddo.R
+import us.huseli.kiddo.compose.MediaListFilterDialog
+import us.huseli.kiddo.compose.MediaListFilterParameter
 import us.huseli.kiddo.compose.MediaListItem
 import us.huseli.kiddo.compose.controls.MediaListControls
 import us.huseli.kiddo.compose.controls.MediaListSortDialog
-import us.huseli.kiddo.compose.screens.albumdetails.AlbumListFilterDialog
 import us.huseli.kiddo.data.types.ListSort
 import us.huseli.kiddo.routing.Routes
 import us.huseli.kiddo.viewmodels.AlbumListViewModel
@@ -38,32 +38,36 @@ import us.huseli.kiddo.viewmodels.AlbumListViewModel
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AlbumListScreen(
-    onAlbumDetailsClick: (Int) -> Unit,
-    onSortAndFilter: (Routes.AlbumList) -> Unit,
+    onNavigate: (Routes) -> Unit,
     viewModel: AlbumListViewModel = hiltViewModel(),
 ) {
     val albums by viewModel.albums.collectAsStateWithLifecycle()
-    val route by viewModel.route.collectAsStateWithLifecycle()
+    val route = viewModel.route
     val loading by viewModel.loading.collectAsStateWithLifecycle()
     val exception by viewModel.exception.collectAsStateWithLifecycle()
-    val listSort by viewModel.listSort.collectAsStateWithLifecycle()
 
     val focusRequester = remember { FocusRequester() }
     var isFilterDialogOpen by rememberSaveable { mutableStateOf(false) }
     var isSortDialogOpen by rememberSaveable { mutableStateOf(false) }
 
     if (isFilterDialogOpen) {
-        AlbumListFilterDialog(
-            route = route,
-            onSubmit = { onSortAndFilter(route.applyState(it)) },
+        MediaListFilterDialog(
+            params = listOf(
+                MediaListFilterParameter("album", route.album, stringResource(R.string.title)),
+                MediaListFilterParameter("artist", route.artist, stringResource(R.string.artist)),
+                MediaListFilterParameter("genre", route.genre, stringResource(R.string.genre)),
+                MediaListFilterParameter("year", route.year, stringResource(R.string.year)),
+                MediaListFilterParameter("style", route.style, stringResource(R.string.style)),
+            ),
+            onSubmit = { onNavigate(route.applyFilterParams(it)) },
             onDismissRequest = { isFilterDialogOpen = false },
         )
     }
 
     if (isSortDialogOpen) {
         MediaListSortDialog(
-            sort = listSort,
-            onSubmit = { onSortAndFilter(route.applyListSort(it)) },
+            sort = viewModel.route.getListSort(),
+            onSubmit = { onNavigate(route.applyListSort(it)) },
             onDismissRequest = { isSortDialogOpen = false },
             methods = listOf(
                 ListSort.Method.Artist to stringResource(R.string.artist),
@@ -85,7 +89,7 @@ fun AlbumListScreen(
                     hasFilters = route.hasFilters(),
                     showSearch = route.hasSearch(),
                     freetext = route.freetext ?: "",
-                    onSearch = { onSortAndFilter(route.copy(freetext = it)) },
+                    onSearch = { onNavigate(route.copy(freetext = it)) },
                     focusRequester = focusRequester,
                 )
             }
@@ -101,24 +105,23 @@ fun AlbumListScreen(
             }
 
             itemsIndexed(albums, key = { _, album -> album.albumid }) { index, album ->
-                var cover by remember(album) { mutableStateOf<ImageBitmap?>(null) }
-
-                LaunchedEffect(album) {
-                    cover = viewModel.getCover(album)
-                }
+                val cover by viewModel.flowCover(album).collectAsStateWithLifecycle()
 
                 MediaListItem(
                     title = album.displayTitle,
                     index = index,
-                    subTitle = album.artistString,
+                    subTitle = {
+                        album.artistString?.also {
+                            Text(it, maxLines = 1, overflow = TextOverflow.Ellipsis, fontStyle = FontStyle.Italic)
+                        }
+                    },
                     genres = album.allGenres,
                     supportingContent = album.supportingContent,
                     rating = album.rating,
                     thumbnail = cover,
                     isCurrentItem = false,
-                    onClick = { onAlbumDetailsClick(album.albumid) },
+                    onClick = { onNavigate(Routes.AlbumDetails(albumId = album.albumid)) },
                     placeholderIcon = Icons.Sharp.Album,
-                    thumbnailSize = DpSize(100.dp, 100.dp),
                 )
             }
         }

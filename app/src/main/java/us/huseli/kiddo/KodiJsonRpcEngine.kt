@@ -45,10 +45,6 @@ class KodiJsonRpcEngine @Inject constructor(@ApplicationContext context: Context
     private val _port = MutableStateFlow<Int>(preferences.getInt(PREF_KODI_PORT, 80))
     private val _username = MutableStateFlow<String?>(preferences.getString(PREF_KODI_USERNAME, null))
 
-    private val _url = combine(_hostname, _port) { hostname, port ->
-        hostname?.let { "http://$hostname:$port/jsonrpc" }
-    }
-
     val authToken = combine(
         _username.map { it?.takeIfNotBlank() },
         _password.map { it?.takeIfNotBlank() },
@@ -63,6 +59,10 @@ class KodiJsonRpcEngine @Inject constructor(@ApplicationContext context: Context
     val password = _password.asStateFlow()
     val port = _port.asStateFlow()
     val username = _username.asStateFlow()
+    val url = combine(_hostname, _port) { hostname, port ->
+        hostname?.let { "http://$hostname:$port" }
+    }
+    val jsonRpcUrl = url.map { url -> url?.let { it.trimEnd('/') + "/jsonrpc" } }
 
     init {
         preferences.registerOnSharedPreferenceChangeListener(this)
@@ -102,7 +102,7 @@ class KodiJsonRpcEngine @Inject constructor(@ApplicationContext context: Context
         request: Request,
         requestId: Int,
     ): Request {
-        val url = _url.filterNotNull().first()
+        val url = jsonRpcUrl.filterNotNull().first()
 
         try {
             request.post(url = url, requestId = requestId, headers = getHeaders())

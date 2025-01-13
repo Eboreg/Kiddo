@@ -10,13 +10,13 @@ import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import us.huseli.kiddo.Constants.PREF_KODI_HOST
@@ -40,6 +40,7 @@ class KodiWebsocketEngine @Inject constructor(@ApplicationContext context: Conte
     private val preferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
 
     private val _connectError = MutableStateFlow<KodiError?>(null)
+    private val _foreground = MutableStateFlow(true)
     private val _hostname = MutableStateFlow<String?>(preferences.getString(PREF_KODI_HOST, null))
     private val _port = MutableStateFlow<Int>(preferences.getInt(PREF_KODI_WEBSOCKET_PORT, 9090))
     private val _url = combine(_hostname, _port) { hostname, port ->
@@ -59,8 +60,10 @@ class KodiWebsocketEngine @Inject constructor(@ApplicationContext context: Conte
         launchOnIOThread {
             if (_hostname.value == null) _status.value = Status.NoHostname
 
-            _url.filterNotNull().collectLatest { url ->
-                while (true) {
+            combine(_url, _foreground) { url, foreground ->
+                url?.takeIf { foreground }
+            }.collectLatest { url ->
+                while (url != null) {
                     val client = HttpClient(CIO) { install(WebSockets) }
 
                     _status.value = Status.Connecting
@@ -83,8 +86,11 @@ class KodiWebsocketEngine @Inject constructor(@ApplicationContext context: Conte
                             }
                         }
                     } catch (e: Throwable) {
+                        if (e is CancellationException) throw e
+
                         val error =
-                            if (e !is KodiError) KodiConnectionError(url, e)
+                            if (e is CancellationException) null
+                            else if (e !is KodiError) KodiConnectionError(url, e)
                             else e
 
                         _status.value = Status.Error
@@ -104,6 +110,10 @@ class KodiWebsocketEngine @Inject constructor(@ApplicationContext context: Conte
 
     fun registerListener(listener: KodiNotificationListener) {
         listeners.add(listener)
+    }
+
+    fun setForeground(value: Boolean) {
+        _foreground.value = value
     }
 
     fun unregisterListener(listener: KodiNotificationListener) {

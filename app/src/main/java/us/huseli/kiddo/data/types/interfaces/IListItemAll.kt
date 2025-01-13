@@ -2,6 +2,7 @@ package us.huseli.kiddo.data.types.interfaces
 
 import com.google.gson.annotations.SerializedName
 import us.huseli.kiddo.sensibleFormat
+import us.huseli.retaintheme.extensions.takeIfNotBlank
 import us.huseli.retaintheme.extensions.takeIfNotEmpty
 import java.util.UUID
 import kotlin.time.Duration.Companion.seconds
@@ -21,6 +22,9 @@ interface IListItemAll : IListItemBase {
         @SerializedName("radio") Radio,
         @SerializedName("tv") Tv,
     }
+
+    val displayTitle: String
+        get() = title?.takeIfNotBlank() ?: label
 
     val stringId: String?
         get() = id?.toString()

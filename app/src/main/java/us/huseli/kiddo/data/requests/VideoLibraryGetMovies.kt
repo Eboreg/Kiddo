@@ -1,37 +1,35 @@
 package us.huseli.kiddo.data.requests
 
 import us.huseli.kiddo.data.AbstractRefRequest
+import us.huseli.kiddo.data.enums.ListFilterFieldsMovies
 import us.huseli.kiddo.data.enums.VideoFieldsMovie
-import us.huseli.kiddo.data.types.ListFilterMovies
+import us.huseli.kiddo.data.requests.interfaces.IListFilterRequest
+import us.huseli.kiddo.data.requests.interfaces.ISimpleFilter
+import us.huseli.kiddo.data.types.ListFilter
 import us.huseli.kiddo.data.types.ListLimits
 import us.huseli.kiddo.data.types.ListLimitsReturned
 import us.huseli.kiddo.data.types.ListSort
 import us.huseli.kiddo.data.types.VideoDetailsMovie
-import us.huseli.retaintheme.extensions.filterValuesNotNull
-import us.huseli.retaintheme.extensions.takeIfNotEmpty
+import us.huseli.kiddo.mapOfNotNull
 import java.lang.reflect.Type
 
 class VideoLibraryGetMovies(
     val properties: List<VideoFieldsMovie>,
     val limits: ListLimits? = null,
     val sort: ListSort? = null,
-    val simpleFilter: SimpleFilter? = null,
-    val filter: ListFilterMovies? = null,
-) : AbstractRefRequest<VideoLibraryGetMovies.Result>() {
+    override val simpleFilter: SimpleFilter? = null,
+    override val filter: ListFilter<ListFilterFieldsMovies>? = null,
+) : AbstractRefRequest<VideoLibraryGetMovies.Result>(),
+    IListFilterRequest<ListFilter<ListFilterFieldsMovies>, VideoLibraryGetMovies.SimpleFilter> {
     override val typeOfResult: Type = Result::class.java
     override val method: String = "VideoLibrary.GetMovies"
 
     override fun getParams(): Map<String, Any?> {
-        val filterMap = listOfNotNull(filter?.getParams(), simpleFilter?.getParams())
-            .takeIfNotEmpty()
-            ?.reduce { acc, m -> acc + m }
-            ?.takeIfNotEmpty()
-
         return mapOf(
             "properties" to properties,
             "limits" to limits,
             "sort" to sort,
-            "filter" to filterMap,
+            "filter" to getFilterParams(),
         )
     }
 
@@ -47,9 +45,9 @@ class VideoLibraryGetMovies(
         val setId: Int? = null,
         val set: String? = null,
         val tag: String? = null,
-    ) {
-        fun getParams(): Map<String, Any> {
-            return mapOf(
+    ) : ISimpleFilter {
+        override fun getParams(): Map<String, Any> {
+            return mapOfNotNull(
                 "genreid" to genreId,
                 "genre" to genre,
                 "year" to year,
@@ -59,7 +57,7 @@ class VideoLibraryGetMovies(
                 "setid" to setId,
                 "set" to set,
                 "tag" to tag,
-            ).filterValuesNotNull()
+            )
         }
     }
 

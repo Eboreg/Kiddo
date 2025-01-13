@@ -64,6 +64,7 @@ import us.huseli.kiddo.data.enums.PlayerRepeat
 import us.huseli.kiddo.data.types.PlayerPropertyValue
 import us.huseli.kiddo.data.types.interfaces.IListItemAll
 import us.huseli.kiddo.data.types.interfaces.IListItemBase
+import us.huseli.kiddo.routing.Routes
 import us.huseli.kiddo.viewmodels.PlayerPanelViewModel
 import us.huseli.retaintheme.extensions.takeIfNotBlank
 import kotlin.math.sqrt
@@ -76,14 +77,13 @@ fun PlayerPanel(
     item: IListItemAll,
     properties: PlayerPropertyValue?,
     collapsible: Boolean = false,
-    onMovieDetailsClick: (Int) -> Unit,
-    onAlbumDetailsClick: (Int) -> Unit,
+    onNavigate: (Routes) -> Unit,
     viewModel: PlayerPanelViewModel = hiltViewModel(),
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
     val expandedMaxHeight = with(density) { 300.dp.toPx() }
-    val collapsedMaxHeight = with(density) { 70.dp.toPx() }
+    val collapsedMaxHeight = with(density) { 80.dp.toPx() }
     val movieId = remember(item) { item.id?.takeIf { item.type == IListItemBase.ItemType.Movie } }
     val albumId = remember(item) { item.albumid?.takeIf { item.type == IListItemBase.ItemType.Song } }
 
@@ -119,7 +119,7 @@ fun PlayerPanel(
         derivedStateOf { with(density) { (expandedMaxHeight - draggableState.offset).toDp() } }
     }
     val columnPadding by remember { derivedStateOf { 10.dp * expandProgress } }
-    val thumbnailHeight by remember { derivedStateOf { 70.dp + (30.dp * expandProgress) } }
+    val thumbnailHeight by remember { derivedStateOf { 80.dp + (20.dp * expandProgress) } }
     val expandedContentAlpha by remember { derivedStateOf { sqrt(expandProgress) } }
     val imageCornerRadius by remember { derivedStateOf { 4.dp * expandProgress } }
 
@@ -149,8 +149,8 @@ fun PlayerPanel(
                     .height(thumbnailHeight)
                     .fillMaxWidth()
                     .let {
-                        if (movieId != null) it.clickable { onMovieDetailsClick(movieId) }
-                        else if (albumId != null) it.clickable { onAlbumDetailsClick(albumId) }
+                        if (movieId != null) it.clickable { onNavigate(Routes.MovieDetails(movieId)) }
+                        else if (albumId != null) it.clickable { onNavigate(Routes.AlbumDetails(albumId)) }
                         else it
                     },
                 verticalAlignment = Alignment.CenterVertically,

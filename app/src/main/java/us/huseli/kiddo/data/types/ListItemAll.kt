@@ -5,7 +5,6 @@ import us.huseli.kiddo.AbstractListMembers
 import us.huseli.kiddo.data.enums.AudioAlbumReleaseType
 import us.huseli.kiddo.data.types.interfaces.IListItemAll
 import us.huseli.kiddo.data.types.interfaces.IListItemBase
-import us.huseli.kiddo.data.types.interfaces.IVideoDetailsFile
 
 @Immutable
 data class ListItemAll(
@@ -74,7 +73,7 @@ data class ListItemAll(
     override val rating: Double?,
     override val releasedate: String?,
     override val releasetype: AudioAlbumReleaseType?,
-    override val resume: IVideoDetailsFile.VideoResume?,
+    override val resume: VideoResume?,
     override val runtime: Int?,
     override val samplerate: Int?,
     override val season: Int?,

@@ -5,5 +5,4 @@ interface IVideoDetailsItem : IVideoDetailsMedia {
     val file: String?
     val lastplayed: String?
     val plot: String?
-
 }

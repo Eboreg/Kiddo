@@ -54,7 +54,6 @@ data class ListSort(
         @SerializedName("year") Year,
     }
 
-    @Suppress("unused")
     enum class Order {
         @SerializedName("ascending") Ascending,
         @SerializedName("descending") Descending,

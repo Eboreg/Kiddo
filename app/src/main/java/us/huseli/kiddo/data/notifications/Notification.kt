@@ -7,6 +7,7 @@ import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement
 import us.huseli.kiddo.data.notifications.data.ApplicationOnVolumeChanged
+import us.huseli.kiddo.data.notifications.data.AudioLibraryOnUpdate
 import us.huseli.kiddo.data.notifications.data.InputOnInputRequested
 import us.huseli.kiddo.data.notifications.data.PlayerNotificationsData
 import us.huseli.kiddo.data.notifications.data.PlayerOnPropertyChanged
@@ -15,6 +16,7 @@ import us.huseli.kiddo.data.notifications.data.PlayerOnStop
 import us.huseli.kiddo.data.notifications.data.PlaylistOnAdd
 import us.huseli.kiddo.data.notifications.data.PlaylistOnClear
 import us.huseli.kiddo.data.notifications.data.PlaylistOnRemove
+import us.huseli.kiddo.data.notifications.data.VideoLibraryOnUpdate
 import us.huseli.kiddo.data.notifications.interfaces.INotificationData
 import us.huseli.retaintheme.utils.ILogger
 import java.lang.reflect.Type
@@ -28,7 +30,7 @@ data class Notification<Data>(
     class TypeAdapter : JsonDeserializer<Notification<*>> {
         private fun JsonElement.asDataObject(method: String?): INotificationData? {
             return takeIf { it.isJsonObject }?.asJsonObject?.let { obj ->
-                val dataClass = when (method) {
+                val dataClass: Class<out INotificationData>? = when (method) {
                     "Application.OnVolumeChanged" -> ApplicationOnVolumeChanged::class.java
                     "Input.OnInputRequested" -> InputOnInputRequested::class.java
                     "Player.OnAVChange" -> PlayerNotificationsData::class.java
@@ -43,6 +45,8 @@ data class Notification<Data>(
                     "Playlist.OnAdd" -> PlaylistOnAdd::class.java
                     "Playlist.OnRemove" -> PlaylistOnRemove::class.java
                     "Playlist.OnClear" -> PlaylistOnClear::class.java
+                    "VideoLibrary.OnUpdate" -> VideoLibraryOnUpdate::class.java
+                    "AudioLibrary.OnUpdate" -> AudioLibraryOnUpdate::class.java
                     else -> null
                 }
 

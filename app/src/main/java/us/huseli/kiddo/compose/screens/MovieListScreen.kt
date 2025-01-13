@@ -10,7 +10,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.sharp.Videocam
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -18,51 +17,56 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import us.huseli.kiddo.R
+import us.huseli.kiddo.compose.MediaListFilterDialog
+import us.huseli.kiddo.compose.MediaListFilterParameter
 import us.huseli.kiddo.compose.MediaListItem
 import us.huseli.kiddo.compose.controls.MediaListControls
 import us.huseli.kiddo.compose.controls.MediaListSortDialog
-import us.huseli.kiddo.compose.screens.movielist.MovieListFilterDialog
 import us.huseli.kiddo.data.types.ListSort
 import us.huseli.kiddo.routing.Routes
+import us.huseli.kiddo.videoRuntime
 import us.huseli.kiddo.viewmodels.MovieListViewModel
+import us.huseli.retaintheme.extensions.takeIfNotEmpty
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MovieListScreen(
-    onMovieDetailsClick: (Int) -> Unit,
-    onSortAndFilter: (Routes.MovieList) -> Unit,
+    onNavigate: (Routes) -> Unit,
     viewModel: MovieListViewModel = hiltViewModel(),
 ) {
     val movies by viewModel.movies.collectAsStateWithLifecycle()
     val currentItem by viewModel.currentItem.collectAsStateWithLifecycle()
-    val route by viewModel.route.collectAsStateWithLifecycle()
+    val route = viewModel.route
     val loading by viewModel.loading.collectAsStateWithLifecycle()
     val exception by viewModel.exception.collectAsStateWithLifecycle()
-    val listSort by viewModel.listSort.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
 
     var isFilterDialogOpen by rememberSaveable { mutableStateOf(false) }
     var isSortDialogOpen by rememberSaveable { mutableStateOf(false) }
 
     if (isFilterDialogOpen) {
-        MovieListFilterDialog(
-            route = route,
-            onSubmit = { onSortAndFilter(route.applyState(it)) },
+        MediaListFilterDialog(
+            params = listOf(
+                MediaListFilterParameter("title", route.title, stringResource(R.string.title)),
+                MediaListFilterParameter("person", route.person, stringResource(R.string.person_director_actor_writer)),
+                MediaListFilterParameter("genre", route.genre, stringResource(R.string.genre)),
+                MediaListFilterParameter("year", route.year, stringResource(R.string.year)),
+                MediaListFilterParameter("country", route.country, stringResource(R.string.country)),
+            ),
+            onSubmit = { onNavigate(route.applyFilterParams(it)) },
             onDismissRequest = { isFilterDialogOpen = false },
         )
     }
 
     if (isSortDialogOpen) {
         MediaListSortDialog(
-            sort = listSort,
-            onSubmit = { onSortAndFilter(route.applyListSort(it)) },
+            sort = route.getListSort(),
+            onSubmit = { onNavigate(route.applyListSort(it)) },
             onDismissRequest = { isSortDialogOpen = false },
             methods = listOf(
                 ListSort.Method.Title to stringResource(R.string.title),
@@ -85,7 +89,7 @@ fun MovieListScreen(
                 hasFilters = route.hasFilters(),
                 showSearch = route.hasSearch(),
                 freetext = route.freetext ?: "",
-                onSearch = { onSortAndFilter(route.copy(freetext = it)) },
+                onSearch = { onNavigate(route.copy(freetext = it)) },
                 focusRequester = focusRequester,
             )
         }
@@ -101,24 +105,26 @@ fun MovieListScreen(
         }
 
         itemsIndexed(movies, key = { _, movie -> movie.movieid }) { index, movie ->
-            var poster by remember(movie) { mutableStateOf<ImageBitmap?>(null) }
-
-            LaunchedEffect(movie) {
-                poster = viewModel.getPoster(movie)
+            val poster by viewModel.flowPoster(movie).collectAsStateWithLifecycle()
+            val minutes = movie.runtime?.videoRuntime()
+            val supportingContent = remember(movie, minutes) {
+                listOfNotNull(minutes, movie.year?.takeIf { it > 0 }?.toString())
+                    .takeIfNotEmpty()
+                    ?.joinToString(" · ")
             }
 
             MediaListItem(
                 title = movie.displayTitle,
                 index = index,
-                subTitle = movie.tagline,
                 genres = movie.genre,
-                supportingContent = movie.supportingContent,
+                supportingContent = supportingContent,
                 rating = movie.rating,
                 thumbnail = poster,
                 isCurrentItem = movie.movieid == currentItem?.id,
-                onClick = { onMovieDetailsClick(movie.movieid) },
+                onClick = { onNavigate(Routes.MovieDetails(movieId = movie.movieid)) },
                 placeholderIcon = Icons.Sharp.Videocam,
-                thumbnailSize = DpSize(width = 60.dp, height = 100.dp),
+                thumbnailWidth = 60.dp,
+                progress = movie.progress,
             )
         }
     }

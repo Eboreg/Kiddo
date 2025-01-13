@@ -75,8 +75,17 @@ object PlayerOpen {
         val item: PlaylistItem,
         options: Options? = null,
     ) : AbstractPlayerOpen(options) {
-        constructor(songId: Int? = null, albumId: Int? = null, movieId: Int? = null, options: Options? = null) :
-            this(item = PlaylistItem(movieId = movieId, albumId = albumId, songId = songId), options = options)
+        constructor(
+            songId: Int? = null,
+            albumId: Int? = null,
+            movieId: Int? = null,
+            episodeId: Int? = null,
+            options: Options? = null,
+        ) :
+            this(
+                item = PlaylistItem(movieId = movieId, albumId = albumId, songId = songId, episodeId = episodeId),
+                options = options,
+            )
 
         override fun getItem(): Map<String, Any?> = item.getParams()
     }

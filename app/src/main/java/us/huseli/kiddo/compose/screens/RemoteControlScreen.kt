@@ -20,13 +20,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import us.huseli.kiddo.compose.PlayerPanel
 import us.huseli.kiddo.compose.PlayerPanelNoMedia
 import us.huseli.kiddo.compose.screens.remotecontrol.ControlPanel
+import us.huseli.kiddo.routing.Routes
 import us.huseli.kiddo.viewmodels.RemoteControlViewModel
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RemoteControlScreen(
-    onMovieDetailsClick: (Int) -> Unit,
-    onAlbumDetailsClick: (Int) -> Unit,
+    onNavigate: (Routes) -> Unit,
     viewModel: RemoteControlViewModel = hiltViewModel()
 ) {
     val hostname by viewModel.hostname.collectAsStateWithLifecycle()
@@ -50,8 +50,7 @@ fun RemoteControlScreen(
                     properties = playerProperties,
                     item = it,
                     collapsible = false,
-                    onMovieDetailsClick = onMovieDetailsClick,
-                    onAlbumDetailsClick = onAlbumDetailsClick,
+                    onNavigate = onNavigate,
                 )
             } ?: run {
                 PlayerPanelNoMedia(

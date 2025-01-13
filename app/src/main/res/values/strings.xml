@@ -1,11 +1,8 @@
 <resources>
-    <string name="add_to_queue">Add to queue</string>
-    <string name="album">Album</string>
     <string name="albums">Albums</string>
     <string name="app_name">Kiddo</string>
     <string name="apply">Apply</string>
     <string name="artist">Artist</string>
-    <string name="artist_x">Artist: %1$s</string>
     <string name="artists">Artists</string>
     <string name="ascending">Ascending</string>
     <string name="audio">Audio</string>
@@ -17,9 +14,9 @@
     <string name="connected_to_x">Connected to %1$s</string>
     <string name="connecting_to_x">Connecting to %1$s …</string>
     <string name="context_menu">Context menu</string>
+    <string name="could_not_find_a_suitable_app_try_installing_vlc">Could not find a suitable app; try installing VLC.</string>
     <string name="countries">Countries</string>
     <string name="country">Country</string>
-    <string name="country_x">Country: %1$s</string>
     <string name="date_added">Date added</string>
     <string name="debug">Debug</string>
     <string name="decrease_speed">Decrease speed</string>
@@ -27,12 +24,16 @@
     <string name="description">Description</string>
     <string name="directors">Directors</string>
     <string name="down">Down</string>
+    <string name="enqueue">Enqueue</string>
+    <string name="failed_to_get_album_x">Failed to get album: %1$s</string>
     <string name="failed_to_get_albums_x">Failed to get albums: %1$s</string>
+    <string name="failed_to_get_movie_x">Failed to get movie: %1$s</string>
     <string name="failed_to_get_movies_x">Failed to get movies: %1$s</string>
+    <string name="failed_to_get_tv_show_x">Failed to get TV show: %1$s</string>
+    <string name="failed_to_get_tv_shows_x">Failed to get TV shows: %1$s</string>
     <string name="filters">Filters</string>
     <string name="fullscreen">Fullscreen</string>
     <string name="genre">Genre</string>
-    <string name="genre_x">Genre: %1$s</string>
     <string name="genres">Genres</string>
     <string name="host">Host</string>
     <string name="increase_speed">Increase speed</string>
@@ -55,7 +56,6 @@
     <string name="password">Password</string>
     <string name="pause">Pause</string>
     <string name="person_director_actor_writer">Person (director, actor, writer)</string>
-    <string name="person_x">Person: %1$s</string>
     <string name="picture">Picture</string>
     <string name="play">Play</string>
     <string name="play_count">Play count</string>
@@ -70,8 +70,11 @@
     <string name="save">Save</string>
     <string name="search">Search</string>
     <string name="search_ellipsis">Search …</string>
+    <string name="seasons">Seasons</string>
     <string name="select">Select</string>
     <string name="send">Send</string>
+    <string name="set_unwatched">Set unwatched</string>
+    <string name="set_watched">Set watched</string>
     <string name="settings">Settings</string>
     <string name="show_less">Show less</string>
     <string name="show_more">Show more</string>
@@ -81,23 +84,30 @@
     <string name="songs">Songs</string>
     <string name="sort">Sort</string>
     <string name="stop">Stop</string>
+    <string name="stream">Stream</string>
     <string name="style">Style</string>
-    <string name="style_x">Style: %1$s</string>
     <string name="styles">Styles</string>
     <string name="subtitles">Subtitles</string>
     <string name="tags">Tags</string>
-    <string name="theme_x">Theme: %1$s</string>
     <string name="themes">Themes</string>
     <string name="title">Title</string>
-    <string name="toggle_fullscreen">Toggle fullscreen</string>
     <string name="toggle_mute">Toggle mute</string>
+    <string name="tv_shows">TV shows</string>
     <string name="unknown">Unknown</string>
     <string name="up">Up</string>
     <string name="username">Username</string>
     <string name="video">Video</string>
     <string name="websocket_port">Websocket port</string>
+    <string name="x_min">%1$s min</string>
     <string name="x_votes">%1$s votes</string>
     <string name="x_was_enqueued">%1$s was enqueued.</string>
     <string name="year">Year</string>
-    <string name="year_x">Year: %1$s</string>
+    <plurals name="x_episodes">
+        <item quantity="one">1 episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
+    <plurals name="x_seasons">
+        <item quantity="one">1 season</item>
+        <item quantity="other">%1$d seasons</item>
+    </plurals>
 </resources>

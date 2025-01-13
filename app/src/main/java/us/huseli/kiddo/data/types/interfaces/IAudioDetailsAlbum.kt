@@ -4,6 +4,7 @@ import us.huseli.kiddo.data.enums.AudioAlbumReleaseType
 import us.huseli.kiddo.data.types.AudioDetailsGenre
 import us.huseli.kiddo.sensibleFormat
 import us.huseli.retaintheme.extensions.cleanDuplicates
+import us.huseli.retaintheme.extensions.takeIfNotBlank
 import us.huseli.retaintheme.extensions.takeIfNotEmpty
 import kotlin.time.Duration.Companion.seconds
 
@@ -32,6 +33,9 @@ interface IAudioDetailsAlbum : IAudioDetailsMedia {
         get() = (songgenres?.mapNotNull { it.title } ?: emptyList())
             .plus(genre ?: emptyList())
             .cleanDuplicates()
+
+    val displayTitle: String
+        get() = title?.takeIfNotBlank() ?: label
 
     val supportingContent: String?
         get() = listOfNotNull(

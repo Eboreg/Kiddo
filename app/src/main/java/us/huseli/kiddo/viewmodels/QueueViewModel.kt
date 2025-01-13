@@ -7,19 +7,16 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.transform
-import us.huseli.kiddo.KodiNotificationListener
 import us.huseli.kiddo.Repository
 import us.huseli.kiddo.data.interfaces.IHasPlaylistId
 import us.huseli.kiddo.data.notifications.Notification
 import us.huseli.kiddo.data.requests.PlaylistGetPlaylists
 import us.huseli.kiddo.data.types.interfaces.IListItemAll
 import us.huseli.retaintheme.extensions.launchOnIOThread
-import us.huseli.retaintheme.utils.AbstractBaseViewModel
 import javax.inject.Inject
 
 @HiltViewModel
-class QueueViewModel @Inject constructor(private val repository: Repository) : AbstractBaseViewModel(),
-    KodiNotificationListener {
+class QueueViewModel @Inject constructor(repository: Repository) : AbstractListeningViewModel(repository) {
     private val _imageBitmaps = MutableStateFlow<Map<String, ImageBitmap?>>(emptyMap())
     private val _playlists = MutableStateFlow<List<PlaylistGetPlaylists.ResultItem>>(emptyList())
     private val _playlistItems = MutableStateFlow<Map<Int, List<IListItemAll>>>(emptyMap())
@@ -28,7 +25,6 @@ class QueueViewModel @Inject constructor(private val repository: Repository) : A
     val playlists: StateFlow<List<PlaylistGetPlaylists.ResultItem>> = _playlists.asStateFlow()
 
     init {
-        repository.registerNotificationListener(this)
         launchOnIOThread { getPlaylists() }
     }
 
@@ -66,21 +62,16 @@ class QueueViewModel @Inject constructor(private val repository: Repository) : A
     }
 
     private suspend fun getPlaylistItems(playlistId: Int) {
-        _playlistItems.value += playlistId to repository.getPlaylistItems(playlistId)
+        _playlistItems.value += playlistId to repository.listPlaylistItems(playlistId)
     }
 
     private suspend fun getPlaylists() {
-        repository.getPlaylists()?.also { playlists ->
+        repository.listPlaylists()?.also { playlists ->
             _playlists.value = playlists
             for (playlist in playlists) {
                 getPlaylistItems(playlist.playlistid)
             }
         }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        repository.unregisterNotificationListener(this)
     }
 
     override fun onKodiNotification(notification: Notification<*>) {

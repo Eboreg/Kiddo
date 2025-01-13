@@ -10,19 +10,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.sharp.AddToQueue
-import androidx.compose.material.icons.sharp.PlayArrow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
@@ -42,8 +39,6 @@ fun MediaDetailsBanner(
     banner: ImageBitmap? = null,
     thumbnail: ImageBitmap? = null,
     votes: String? = null,
-    onPlayClick: () -> Unit,
-    onEnqueueClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.height(160.dp)) {
@@ -64,7 +59,11 @@ fun MediaDetailsBanner(
             horizontalArrangement = Arrangement.spacedBy(5.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(modifier = Modifier.width(thumbnailWidth)) {
+            Surface(
+                modifier = Modifier.width(thumbnailWidth),
+                shape = MaterialTheme.shapes.extraSmall,
+                color = Color.Transparent,
+            ) {
                 thumbnail?.also {
                     Image(
                         bitmap = it,
@@ -107,22 +106,6 @@ fun MediaDetailsBanner(
                     }
                 }
             }
-        }
-
-        Row(
-            modifier = Modifier.align(Alignment.BottomEnd),
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
-        ) {
-            FilledIconButton(
-                onClick = onEnqueueClick,
-                content = { Icon(Icons.Sharp.AddToQueue, stringResource(R.string.add_to_queue)) },
-                modifier = Modifier.shadow(10.dp),
-            )
-            FilledIconButton(
-                onClick = onPlayClick,
-                content = { Icon(Icons.Sharp.PlayArrow, stringResource(R.string.play)) },
-                modifier = Modifier.shadow(10.dp),
-            )
         }
     }
 }

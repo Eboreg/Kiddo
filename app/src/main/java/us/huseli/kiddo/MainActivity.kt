@@ -11,9 +11,10 @@ import dagger.hilt.android.AndroidEntryPoint
 import us.huseli.kiddo.compose.App
 import us.huseli.kiddo.viewmodels.AppViewModel
 import us.huseli.retaintheme.ui.theme.RetainTheme
+import us.huseli.retaintheme.utils.ILogger
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), ILogger {
     val viewModel: AppViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,6 +28,16 @@ class MainActivity : ComponentActivity() {
                 App()
             }
         }
+    }
+
+    override fun onRestart() {
+        viewModel.setForeground(true)
+        super.onRestart()
+    }
+
+    override fun onStop() {
+        viewModel.setForeground(false)
+        super.onStop()
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {

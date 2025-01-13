@@ -28,7 +28,7 @@ abstract class AbstractRequest<Result : Any> : ILogger {
     var status: Status = Status.Pending
         private set
 
-    abstract fun getParams(): Map<String, Any?>
+    abstract fun getParams(): Any
 
     suspend fun post(
         url: String,
@@ -46,6 +46,9 @@ abstract class AbstractRequest<Result : Any> : ILogger {
             )
         )
         val responseJson = Request.postJson(url = url, json = json, gson = gson, headers = headers).getString()
+
+        if (responseJson.length <= 900) log("responseJson=$responseJson", priority = Log.DEBUG)
+
         val response = gson.fromJson<List<KodiJsonRpcResponse<Result>>>(responseJson, responseListType)
             .map { it.copy(method = method, request = this) }
             .also { response ->

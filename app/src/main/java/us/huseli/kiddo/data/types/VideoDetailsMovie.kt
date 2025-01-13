@@ -1,7 +1,6 @@
 package us.huseli.kiddo.data.types
 
 import us.huseli.kiddo.AbstractListMembers
-import us.huseli.kiddo.data.types.interfaces.IVideoDetailsFile
 import us.huseli.kiddo.data.types.interfaces.IVideoDetailsMovie
 
 data class VideoDetailsMovie(
@@ -25,7 +24,7 @@ data class VideoDetailsMovie(
     override val premiered: String? = null,
     override val rating: Double? = null,
     override val ratings: Map<String, VideoRating>? = null,
-    override val resume: IVideoDetailsFile.VideoResume? = null,
+    override val resume: VideoResume? = null,
     override val runtime: Int? = null,
     override val set: String? = null,
     override val setid: Int? = null,

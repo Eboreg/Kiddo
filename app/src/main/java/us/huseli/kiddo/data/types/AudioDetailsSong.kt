@@ -3,6 +3,7 @@ package us.huseli.kiddo.data.types
 import us.huseli.kiddo.AbstractListMembers
 import us.huseli.kiddo.data.enums.AudioAlbumReleaseType
 import us.huseli.kiddo.data.types.interfaces.IAudioDetailsSong
+import us.huseli.retaintheme.extensions.takeIfNotBlank
 
 data class AudioDetailsSong(
     override val album: String? = null,
@@ -53,5 +54,8 @@ data class AudioDetailsSong(
     override val votes: String? = null,
     override val year: Int? = null,
 ) : IAudioDetailsSong, AbstractListMembers() {
+    val displayTitle: String
+        get() = title?.takeIfNotBlank() ?: label
+
     override fun toString(): String = memberPropertiesToString()
 }

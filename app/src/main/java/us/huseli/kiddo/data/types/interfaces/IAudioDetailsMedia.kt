@@ -1,6 +1,5 @@
 package us.huseli.kiddo.data.types.interfaces
 
-import us.huseli.retaintheme.extensions.takeIfNotBlank
 import us.huseli.retaintheme.extensions.takeIfNotEmpty
 
 interface IAudioDetailsMedia : IAudioDetailsBase {
@@ -19,7 +18,4 @@ interface IAudioDetailsMedia : IAudioDetailsBase {
 
     val artistString: String?
         get() = artist?.takeIfNotEmpty()?.joinToString(", ")
-
-    val displayTitle: String
-        get() = title?.takeIfNotBlank() ?: label
 }

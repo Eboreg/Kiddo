@@ -8,11 +8,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PlayerPanelViewModel @Inject constructor(private val repository: Repository) : AbstractBaseViewModel() {
-    val isMuted = repository.isMuted
-    val isPlaying = repository.isPlaying
-    val playerElapsedTime = repository.playerElapsedTimeSeconds
+    val isMuted = repository.isMuted.stateWhileSubscribed(false)
+    val isPlaying = repository.isPlaying.stateWhileSubscribed(false)
+    val playerElapsedTime = repository.playerElapsedTimeSeconds.stateWhileSubscribed()
     val playerProgress = repository.playerProgress
-    val playerThumbnail = repository.playerThumbnailImage
+    val playerThumbnail = repository.playerThumbnailImage.stateWhileSubscribed()
     val playerTotalTime = repository.playerTotalTimeSeconds
     val volume = repository.volume
 

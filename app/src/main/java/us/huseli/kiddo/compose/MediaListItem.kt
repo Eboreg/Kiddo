@@ -5,15 +5,19 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -22,9 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import us.huseli.retaintheme.extensions.takeIfNotEmpty
 
@@ -32,19 +35,26 @@ import us.huseli.retaintheme.extensions.takeIfNotEmpty
 fun MediaListItem(
     title: String,
     index: Int,
-    placeholderIcon: ImageVector,
-    subTitle: String?,
-    genres: Collection<String>?,
-    supportingContent: String?,
-    rating: Double?,
-    thumbnail: ImageBitmap?,
-    thumbnailSize: DpSize,
-    isCurrentItem: Boolean,
-    onClick: () -> Unit,
+    placeholderIcon: ImageVector? = null,
+    thumbnailWidth: Dp = 100.dp,
+    isCurrentItem: Boolean = false,
+    onClick: (() -> Unit)? = null,
+    subTitle: @Composable ColumnScope.() -> Unit = {},
+    genres: Collection<String>? = null,
+    supportingContent: String? = null,
+    rating: Double? = null,
+    thumbnail: ImageBitmap? = null,
+    progress: Float? = null,
+    baseTonalElevation: Dp = 0.dp,
+    alternateTonalElevationIncrement: Dp = 10.dp,
     modifier: Modifier = Modifier,
 ) {
+    val tonalElevation =
+        if ((index + 1) % 2 == 0) baseTonalElevation
+        else baseTonalElevation + alternateTonalElevationIncrement
+
     ListItem(
-        tonalElevation = 10.dp * ((index + 1) % 2),
+        tonalElevation = tonalElevation,
         headlineContent = {
             Text(
                 text = title,
@@ -55,9 +65,7 @@ fun MediaListItem(
         },
         supportingContent = {
             Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                subTitle?.let {
-                    Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis, fontStyle = FontStyle.Italic)
-                }
+                subTitle()
                 Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                     genres?.takeIfNotEmpty()?.forEach { genre ->
                         Badge(containerColor = MaterialTheme.colorScheme.primaryContainer) {
@@ -68,32 +76,56 @@ fun MediaListItem(
             }
         },
         overlineContent = {
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Column {
-                    supportingContent?.let {
-                        Text(it, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Column {
+                Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                    Column {
+                        supportingContent?.let {
+                            Text(it, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
                     }
+                    rating?.takeIf { it > 0.0 }?.let { RatingStars(it, starSize = 12.dp) }
                 }
-                rating?.takeIf { it > 0.0 }?.let { RatingStars(it, starSize = 12.dp) }
+                progress?.also {
+                    LinearProgressIndicator(
+                        progress = { it },
+                        drawStopIndicator = {},
+                        trackColor = MaterialTheme.colorScheme.primaryContainer,
+                        color = MaterialTheme.colorScheme.primary,
+                        gapSize = 0.dp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 5.dp)
+                            .height(3.dp)
+                    )
+                }
             }
         },
         leadingContent = {
-            Surface(
-                shape = RoundedCornerShape(2.dp),
-                modifier = Modifier.size(thumbnailSize),
-            ) {
-                thumbnail?.also {
-                    Image(
-                        bitmap = it,
+            if (thumbnail != null || placeholderIcon != null) {
+                Surface(
+                    shape = RoundedCornerShape(3.dp),
+                    modifier = Modifier.width(thumbnailWidth),
+                ) {
+                    if (thumbnail != null) Image(
+                        bitmap = thumbnail,
                         contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        contentScale = ContentScale.FillWidth,
+                        modifier = Modifier.fillMaxWidth(),
                     )
-                } ?: run { Icon(placeholderIcon, null, modifier = Modifier.fillMaxSize()) }
+                    else if (placeholderIcon != null) Icon(
+                        imageVector = placeholderIcon,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                        tint = LocalContentColor.current.copy(alpha = 0.75f),
+                    )
+                }
             }
         },
         modifier = modifier
-            .clickable(onClick = onClick)
+            .then(
+                if (onClick != null) Modifier.clickable(onClick = onClick)
+                else Modifier
+            )
             .then(
                 if (isCurrentItem) Modifier.border(
                     width = 2.dp,

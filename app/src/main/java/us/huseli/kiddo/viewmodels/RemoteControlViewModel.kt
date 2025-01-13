@@ -8,7 +8,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class RemoteControlViewModel @Inject constructor(private val repository: Repository) : AbstractBaseViewModel() {
-    val connectErrors = repository.connectErrorStrings
+    val connectErrors = repository.connectErrorStrings.stateWhileSubscribed(emptyList())
     val connectStatus = repository.websocketStatus
     val hostname = repository.hostname
     val playerCoverImage = repository.playerCoverImage

@@ -2,10 +2,15 @@ package us.huseli.kiddo.compose.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.sharp.AddToQueue
+import androidx.compose.material.icons.sharp.PlayArrow
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,21 +25,24 @@ import us.huseli.kiddo.compose.CollapsedText
 import us.huseli.kiddo.compose.ItemInfoRow
 import us.huseli.kiddo.compose.MediaDetailsBanner
 import us.huseli.kiddo.compose.MediaDetailsInfo
+import us.huseli.kiddo.compose.controls.NiceOutlinedButton
 import us.huseli.kiddo.compose.screens.albumdetails.AlbumDetailsSong
 import us.huseli.kiddo.routing.Routes
+import us.huseli.kiddo.sensibleFormat
 import us.huseli.kiddo.viewmodels.AlbumDetailsViewModel
 import us.huseli.retaintheme.extensions.takeIfNotBlank
 import us.huseli.retaintheme.extensions.takeIfNotEmpty
 import kotlin.time.Duration.Companion.seconds
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AlbumDetailsScreen(
-    onAlbumListClick: (Routes.AlbumList) -> Unit,
+    onNavigate: (Routes) -> Unit,
     viewModel: AlbumDetailsViewModel = hiltViewModel(),
 ) {
     val cover by viewModel.cover.collectAsStateWithLifecycle()
     val details by viewModel.albumDetails.collectAsStateWithLifecycle()
-    val error by viewModel.error.collectAsStateWithLifecycle()
+    val exception by viewModel.exception.collectAsStateWithLifecycle()
     val banner by viewModel.banner.collectAsStateWithLifecycle()
     val headlineStyle = MaterialTheme.typography.titleLarge
     val loading by viewModel.loading.collectAsStateWithLifecycle()
@@ -45,20 +53,39 @@ fun AlbumDetailsScreen(
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         if (loading) Text(stringResource(R.string.loading_ellipsis), modifier = Modifier.padding(top = 10.dp))
-        error?.also { Text(it, modifier = Modifier.padding(top = 10.dp)) }
+        exception?.also {
+            Text(stringResource(R.string.failed_to_get_album_x, it), modifier = Modifier.padding(top = 10.dp))
+        }
 
         MediaDetailsBanner(
             title = details.displayTitle,
             headlineStyle = headlineStyle,
-            thumbnailWidth = 120.dp,
+            thumbnailWidth = 140.dp,
             subTitle = details.artistString,
             rating = details.rating,
             banner = banner,
             thumbnail = cover,
             votes = details.votes,
-            onPlayClick = { viewModel.play() },
-            onEnqueueClick = { viewModel.enqueue() },
         )
+
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            NiceOutlinedButton(
+                onClick = { viewModel.play() },
+                leadingIcon = Icons.Sharp.PlayArrow,
+                text = stringResource(R.string.play),
+                modifier = Modifier.padding(horizontal = 2.dp),
+            )
+            NiceOutlinedButton(
+                onClick = { viewModel.enqueue() },
+                leadingIcon = Icons.Sharp.AddToQueue,
+                text = stringResource(R.string.enqueue),
+                modifier = Modifier.padding(horizontal = 2.dp),
+            )
+        }
 
         details.description?.takeIfNotBlank()?.also { description ->
             Column(
@@ -78,13 +105,13 @@ fun AlbumDetailsScreen(
         MediaDetailsInfo(
             headlineStyle = headlineStyle,
             personsLabel = stringResource(R.string.artists),
-            duration = details.albumduration?.seconds,
-            year = details.year?.toString(),
+            duration = details.albumduration?.seconds?.sensibleFormat(withSeconds = false),
+            year = details.year?.takeIf { it > 0 }?.toString(),
             persons = details.artist,
             genres = details.allGenres,
-            onPersonClick = { onAlbumListClick(Routes.AlbumList(artist = it)) },
-            onGenreClick = { onAlbumListClick(Routes.AlbumList(genre = it)) },
-            onYearClick = { onAlbumListClick(Routes.AlbumList(year = it)) },
+            onPersonClick = { onNavigate(Routes.AlbumList(artist = it)) },
+            onGenreClick = { onNavigate(Routes.AlbumList(genre = it)) },
+            onYearClick = { onNavigate(Routes.AlbumList(year = it)) },
             modifier = Modifier.padding(horizontal = 10.dp),
         ) {
             details.mood?.takeIfNotEmpty()?.also { moods ->
@@ -94,14 +121,14 @@ fun AlbumDetailsScreen(
                 ItemInfoRow(
                     label = stringResource(R.string.styles),
                     texts = styles,
-                    onClick = { onAlbumListClick(Routes.AlbumList(style = it)) },
+                    onClick = { onNavigate(Routes.AlbumList(style = it)) },
                 )
             }
             details.theme?.takeIfNotEmpty()?.also { themes ->
                 ItemInfoRow(
                     label = stringResource(R.string.themes),
                     texts = themes,
-                    onClick = { onAlbumListClick(Routes.AlbumList(theme = it)) },
+                    onClick = { onNavigate(Routes.AlbumList(theme = it)) },
                 )
             }
             details.playcount?.also {
@@ -114,7 +141,9 @@ fun AlbumDetailsScreen(
                 Text(
                     text = stringResource(R.string.songs),
                     style = headlineStyle,
-                    modifier = Modifier.padding(horizontal = 10.dp).padding(top = 10.dp, bottom = 5.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 10.dp)
+                        .padding(top = 10.dp, bottom = 5.dp),
                 )
 
                 for ((index, song) in songs.withIndex()) {

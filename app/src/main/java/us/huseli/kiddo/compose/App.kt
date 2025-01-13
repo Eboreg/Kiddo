@@ -35,6 +35,8 @@ import us.huseli.kiddo.compose.screens.MovieListScreen
 import us.huseli.kiddo.compose.screens.QueueScreen
 import us.huseli.kiddo.compose.screens.RemoteControlScreen
 import us.huseli.kiddo.compose.screens.SettingsScreen
+import us.huseli.kiddo.compose.screens.TvShowDetailsScreen
+import us.huseli.kiddo.compose.screens.TvShowListScreen
 import us.huseli.kiddo.routing.MenuItems
 import us.huseli.kiddo.routing.Routes
 import us.huseli.kiddo.viewmodels.AppViewModel
@@ -46,11 +48,8 @@ import us.huseli.retaintheme.compose.SnackbarHosts
 fun App(viewModel: AppViewModel = hiltViewModel()) {
     val navController: NavHostController = rememberNavController()
     val inputRequest by viewModel.inputRequest.collectAsStateWithLifecycle()
-    val onMovieDetailsClick = { movieId: Int ->
-        navController.navigate(Routes.MovieDetails(movieId = movieId))
-    }
-    val onAlbumDetailsClick = { albumId: Int ->
-        navController.navigate(Routes.AlbumDetails(albumId = albumId))
+    val onNavigate = { route: Routes ->
+        navController.navigate(route)
     }
     val currentEntry: NavBackStackEntry? by navController.currentBackStackEntryAsState()
     val currentPlayerItem by viewModel.currentPlayerItem.collectAsStateWithLifecycle()
@@ -84,10 +83,9 @@ fun App(viewModel: AppViewModel = hiltViewModel()) {
                     PlayerPanel(
                         item = it,
                         properties = playerProperties,
-                        onMovieDetailsClick = onMovieDetailsClick,
-                        onAlbumDetailsClick = onAlbumDetailsClick,
                         collapsible = true,
                         modifier = Modifier.windowInsetsPadding(WindowInsets.navigationBars),
+                        onNavigate = onNavigate,
                     )
                 }
             }
@@ -108,46 +106,16 @@ fun App(viewModel: AppViewModel = hiltViewModel()) {
             startDestination = Routes.RemoteControl,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable<Routes.RemoteControl> {
-                RemoteControlScreen(
-                    onMovieDetailsClick = onMovieDetailsClick,
-                    onAlbumDetailsClick = onAlbumDetailsClick,
-                )
-            }
-
-            composable<Routes.Settings> {
-                SettingsScreen()
-            }
-
-            composable<Routes.Queue> {
-                QueueScreen()
-            }
-
-            composable<Routes.MovieList> {
-                MovieListScreen(
-                    onMovieDetailsClick = onMovieDetailsClick,
-                    onSortAndFilter = { navController.navigate(it) },
-                )
-            }
-
-            composable<Routes.MovieDetails> {
-                MovieDetailsScreen(onMovieListClick = { navController.navigate(it) })
-            }
-
-            composable<Routes.AlbumList> {
-                AlbumListScreen(
-                    onAlbumDetailsClick = onAlbumDetailsClick,
-                    onSortAndFilter = { navController.navigate(it) },
-                )
-            }
-
-            composable<Routes.AlbumDetails> {
-                AlbumDetailsScreen(onAlbumListClick = { navController.navigate(it) })
-            }
-
-            composable<Routes.Debug> {
-                DebugScreen()
-            }
+            composable<Routes.RemoteControl> { RemoteControlScreen(onNavigate) }
+            composable<Routes.Settings> { SettingsScreen() }
+            composable<Routes.Queue> { QueueScreen() }
+            composable<Routes.MovieList> { MovieListScreen(onNavigate) }
+            composable<Routes.MovieDetails> { MovieDetailsScreen(onNavigate) }
+            composable<Routes.AlbumList> { AlbumListScreen(onNavigate) }
+            composable<Routes.AlbumDetails> { AlbumDetailsScreen(onNavigate) }
+            composable<Routes.TvShowList> { TvShowListScreen(onNavigate) }
+            composable<Routes.TvShowDetails> { TvShowDetailsScreen(onNavigate) }
+            composable<Routes.Debug> { DebugScreen() }
         }
     }
 }
