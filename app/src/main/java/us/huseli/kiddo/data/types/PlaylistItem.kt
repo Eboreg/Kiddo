@@ -1,17 +1,19 @@
 package us.huseli.kiddo.data.types
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.enums.FilesMedia
 
+@Immutable
 data class PlaylistItem(
-    val file: String? = null,
-    val directory: Directory? = null,
-    val movieId: Int? = null,
-    val episodeId: Int? = null,
-    val musicVideoId: Int? = null,
-    val artistId: Int? = null,
     val albumId: Int? = null,
-    val songId: Int? = null,
+    val artistId: Int? = null,
+    val directory: Directory? = null,
+    val episodeId: Int? = null,
+    val file: String? = null,
     val genreId: Int? = null,
+    val movieId: Int? = null,
+    val musicVideoId: Int? = null,
+    val songId: Int? = null,
 ) {
     fun getParams(): Map<String, Any?> {
         return mapOf(
@@ -26,6 +28,7 @@ data class PlaylistItem(
         ).let { if (directory != null) it + directory.getParams() else it }
     }
 
+    @Immutable
     data class Directory(
         val directory: String,
         val media: FilesMedia? = null,

@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.requests
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.AbstractItemRequest
 import us.huseli.kiddo.data.enums.AudioFieldsAlbum
 import us.huseli.kiddo.data.requests.interfaces.IItemResult
@@ -38,6 +39,7 @@ class AudioLibraryGetAlbumDetails(
 
     override fun getParams(): Map<String, Any?> = mapOf("albumid" to albumId, "properties" to properties)
 
+    @Immutable
     data class Result(val albumdetails: AudioDetailsAlbum?) : IItemResult<AudioDetailsAlbum> {
         override val item: AudioDetailsAlbum?
             get() = albumdetails

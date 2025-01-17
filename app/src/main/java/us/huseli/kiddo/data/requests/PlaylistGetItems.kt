@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.requests
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.AbstractListRequest
 import us.huseli.kiddo.data.enums.ListFieldsAll
 import us.huseli.kiddo.data.requests.interfaces.IListResult
@@ -29,6 +30,7 @@ class PlaylistGetItems(
 
     override fun getParams() = super.getParams() + ("playlistid" to playlistId)
 
+    @Immutable
     data class Result(
         override val items: List<ListItemAll>,
         override val limits: ListLimitsReturned,

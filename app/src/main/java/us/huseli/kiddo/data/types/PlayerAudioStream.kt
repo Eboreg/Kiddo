@@ -1,8 +1,10 @@
 package us.huseli.kiddo.data.types
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.stripTags
 import us.huseli.retaintheme.extensions.takeIfNotBlank
 
+@Immutable
 data class PlayerAudioStream(
     val bitrate: Int,
     val channels: Int,

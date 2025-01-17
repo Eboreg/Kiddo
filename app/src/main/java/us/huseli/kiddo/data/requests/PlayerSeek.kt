@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.requests
 
+import androidx.compose.runtime.Immutable
 import com.google.gson.annotations.SerializedName
 import us.huseli.kiddo.data.AbstractRefRequest
 import us.huseli.kiddo.data.interfaces.IHasPlayerTime
@@ -22,6 +23,7 @@ class PlayerSeek(
         val step: Step? = null,
     )
 
+    @Immutable
     data class Result(
         val percentage: Double?,
         override val time: GlobalTime?,

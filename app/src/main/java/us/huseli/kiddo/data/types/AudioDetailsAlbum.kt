@@ -1,9 +1,11 @@
 package us.huseli.kiddo.data.types
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.AbstractListMembers
 import us.huseli.kiddo.data.enums.AudioAlbumReleaseType
 import us.huseli.kiddo.data.types.interfaces.IAudioDetailsAlbum
 
+@Immutable
 data class AudioDetailsAlbum(
     override val albumid: Int,
     override val label: String,

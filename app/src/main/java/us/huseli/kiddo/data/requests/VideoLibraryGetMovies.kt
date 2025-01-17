@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.requests
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.AbstractListRequest
 import us.huseli.kiddo.data.enums.ListFilterFieldsMovies
 import us.huseli.kiddo.data.enums.VideoFieldsMovie
@@ -68,6 +69,7 @@ class VideoLibraryGetMovies(
         }
     }
 
+    @Immutable
     data class Result(
         override val limits: ListLimitsReturned,
         val movies: List<VideoDetailsMovie>?,

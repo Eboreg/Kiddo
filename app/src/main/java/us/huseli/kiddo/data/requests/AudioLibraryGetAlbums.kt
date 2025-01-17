@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.requests
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.AbstractListRequest
 import us.huseli.kiddo.data.enums.AudioFieldsAlbum
 import us.huseli.kiddo.data.enums.ListFilterFieldsAlbums
@@ -82,6 +83,7 @@ class AudioLibraryGetAlbums(
         data class ArtistWithRole(val artist: String, val role: String)
     }
 
+    @Immutable
     data class Result(
         override val limits: ListLimitsReturned,
         val albums: List<AudioDetailsAlbum>?,

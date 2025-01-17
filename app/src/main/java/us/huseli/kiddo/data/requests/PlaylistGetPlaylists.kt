@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.requests
 
+import androidx.compose.runtime.Immutable
 import com.google.gson.reflect.TypeToken
 import us.huseli.kiddo.data.AbstractRefRequest
 import us.huseli.kiddo.data.enums.PlaylistType
@@ -13,6 +14,7 @@ class PlaylistGetPlaylists() : AbstractRefRequest<List<PlaylistGetPlaylists.Resu
 
     override fun getParams(): Map<String, Any?> = emptyMap()
 
+    @Immutable
     data class ResultItem(
         override val playlistid: Int,
         val type: PlaylistType,

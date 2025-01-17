@@ -5,9 +5,9 @@ import us.huseli.kiddo.data.requests.interfaces.IRequestProperty
 
 @Suppress("unused")
 enum class GuiPropertyName : IRequestProperty {
-    @SerializedName("currentwindow") CurrentWindow,
     @SerializedName("currentcontrol") CurrentControl,
-    @SerializedName("skin") Skin,
+    @SerializedName("currentwindow") CurrentWindow,
     @SerializedName("fullscreen") Fullscreen,
+    @SerializedName("skin") Skin,
     @SerializedName("stereoscopicmode") StereoscopicMode,
 }

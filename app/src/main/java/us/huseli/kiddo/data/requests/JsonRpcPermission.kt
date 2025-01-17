@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.requests
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.AbstractRefRequest
 import java.lang.reflect.Type
 
@@ -9,6 +10,7 @@ class JsonRpcPermission : AbstractRefRequest<JsonRpcPermission.Result>() {
 
     override fun getParams(): Map<String, Any?> = emptyMap()
 
+    @Immutable
     data class Result(
         val controlgui: Boolean,
         val controlnotify: Boolean,

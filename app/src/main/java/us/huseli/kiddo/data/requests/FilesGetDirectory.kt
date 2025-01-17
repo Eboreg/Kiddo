@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.requests
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.AbstractListRequest
 import us.huseli.kiddo.data.enums.ListFieldsFiles
 import us.huseli.kiddo.data.requests.interfaces.IListResult
@@ -27,6 +28,7 @@ class FilesGetDirectory(
         )
     }
 
+    @Immutable
     data class Result(
         val files: List<ListItemFile>,
         override val limits: ListLimitsReturned,

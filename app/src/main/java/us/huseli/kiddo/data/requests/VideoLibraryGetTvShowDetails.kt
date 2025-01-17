@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.requests
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.AbstractItemRequest
 import us.huseli.kiddo.data.enums.VideoFieldsTvShow
 import us.huseli.kiddo.data.requests.interfaces.IItemResult
@@ -33,6 +34,7 @@ class VideoLibraryGetTvShowDetails(
 
     override fun getParams(): Map<String, Any?> = super.getParams() + ("tvshowid" to tvShowId)
 
+    @Immutable
     data class Result(val tvshowdetails: VideoDetailsTvShow?) : IItemResult<VideoDetailsTvShow> {
         override val item: VideoDetailsTvShow?
             get() = tvshowdetails

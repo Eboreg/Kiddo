@@ -1,5 +1,8 @@
 package us.huseli.kiddo.data.types
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class PlayerPositionTime(
     val hours: Int? = null,
     val milliseconds: Int? = null,

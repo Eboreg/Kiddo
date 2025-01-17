@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.requests
 
+import androidx.compose.runtime.Immutable
 import com.google.gson.annotations.SerializedName
 import com.google.gson.reflect.TypeToken
 import us.huseli.kiddo.data.AbstractRefRequest
@@ -12,6 +13,7 @@ class PlayerGetActivePlayers() : AbstractRefRequest<List<PlayerGetActivePlayers.
 
     override fun getParams(): Map<String, Any?> = emptyMap()
 
+    @Immutable
     data class ResultItem(
         override val playerid: Int,
         val playertype: PlayerPlayerType,

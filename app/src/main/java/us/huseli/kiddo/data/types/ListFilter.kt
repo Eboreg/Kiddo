@@ -1,8 +1,10 @@
 package us.huseli.kiddo.data.types
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.enums.ListFilterOperators
 import us.huseli.retaintheme.extensions.takeIfNotEmpty
 
+@Immutable
 class ListFilter<Field : Any>(
     val and: Collection<ListFilter<Field>>? = null,
     val or: Collection<ListFilter<Field>>? = null,

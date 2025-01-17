@@ -1,7 +1,9 @@
 package us.huseli.kiddo.data.types
 
+import androidx.compose.runtime.Immutable
 import com.google.gson.annotations.SerializedName
 
+@Immutable
 data class ListSort(
     val ignorearticle: Boolean? = null,
     val method: Method? = null,

@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.requests
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.AbstractListRequest
 import us.huseli.kiddo.data.enums.FilesMedia
 import us.huseli.kiddo.data.requests.interfaces.IListResult
@@ -21,6 +22,7 @@ class FilesGetSources(
         return super.getParams() + ("media" to media)
     }
 
+    @Immutable
     data class Result(
         override val limits: ListLimitsReturned,
         val sources: List<ListItemSource>,

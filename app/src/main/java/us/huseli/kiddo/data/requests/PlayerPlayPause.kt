@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.requests
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.AbstractRefRequest
 import us.huseli.kiddo.data.enums.GlobalToggle
 import us.huseli.kiddo.data.interfaces.IHasPlayerSpeed
@@ -14,5 +15,6 @@ class PlayerPlayPause(
 
     override fun getParams() = mapOf("playerid" to playerId, "play" to play)
 
+    @Immutable
     data class Result(override val speed: Int) : IHasPlayerSpeed
 }

@@ -1,7 +1,9 @@
 package us.huseli.kiddo.data.types
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.enums.ListFilterOperators
 
+@Immutable
 data class ListFilterRule<FieldType : Any>(
     val operator: ListFilterOperators,
     val value: List<String>,

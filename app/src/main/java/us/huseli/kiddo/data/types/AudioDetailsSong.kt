@@ -1,10 +1,12 @@
 package us.huseli.kiddo.data.types
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.AbstractListMembers
 import us.huseli.kiddo.data.enums.AudioAlbumReleaseType
 import us.huseli.kiddo.data.types.interfaces.IAudioDetailsSong
 import us.huseli.retaintheme.extensions.takeIfNotBlank
 
+@Immutable
 data class AudioDetailsSong(
     override val album: String? = null,
     override val albumartist: List<String>? = null,

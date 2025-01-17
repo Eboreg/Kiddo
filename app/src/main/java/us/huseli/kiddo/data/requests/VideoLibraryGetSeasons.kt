@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.requests
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.AbstractRefRequest
 import us.huseli.kiddo.data.enums.VideoFieldsSeason
 import us.huseli.kiddo.data.requests.interfaces.IListResult
@@ -35,6 +36,7 @@ class VideoLibraryGetSeasons(
         )
     }
 
+    @Immutable
     data class Result(
         override val limits: ListLimitsReturned,
         val seasons: List<VideoDetailsSeason>?,

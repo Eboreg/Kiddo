@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.requests
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.AbstractRefRequest
 import us.huseli.kiddo.data.enums.ListFieldsFiles
 import us.huseli.kiddo.data.types.ListItemFile
@@ -19,5 +20,6 @@ class FilesGetFileDetails(
         return mapOf("file" to file, "properties" to properties)
     }
 
+    @Immutable
     data class Result(val filedetails: ListItemFile)
 }

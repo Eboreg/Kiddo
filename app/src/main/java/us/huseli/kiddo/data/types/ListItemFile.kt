@@ -1,10 +1,12 @@
 package us.huseli.kiddo.data.types
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.AbstractListMembers
 import us.huseli.kiddo.data.enums.AudioAlbumReleaseType
 import us.huseli.kiddo.data.types.interfaces.IListItemBase
 import us.huseli.kiddo.data.types.interfaces.IListItemFile
 
+@Immutable
 data class ListItemFile(
     override val album: String?,
     override val albumartist: List<String>?,

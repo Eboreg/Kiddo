@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.types
 
+import androidx.compose.runtime.Immutable
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
@@ -7,6 +8,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.DurationUnit
 
+@Immutable
 data class GlobalTime(
     val hours: Int = 0,
     val milliseconds: Int = 0,

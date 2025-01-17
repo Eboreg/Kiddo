@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.requests
 
+import androidx.compose.runtime.Immutable
 import com.google.gson.annotations.SerializedName
 import us.huseli.kiddo.data.AbstractRefRequest
 import java.lang.reflect.Type
@@ -12,11 +13,13 @@ class FilesPrepareDownload(val path: String) : AbstractRefRequest<FilesPrepareDo
         return mapOf("path" to path)
     }
 
+    @Immutable
     data class Result(
         val details: Details,
         val mode: Mode,
         val protocol: Protocol,
     ) {
+        @Immutable
         data class Details(
             val path: String?,
         )

@@ -1,8 +1,10 @@
 package us.huseli.kiddo.data.types
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.AbstractListMembers
 import us.huseli.kiddo.data.types.interfaces.IVideoDetailsMovie
 
+@Immutable
 data class VideoDetailsMovie(
     override val label: String,
     override val movieid: Int,

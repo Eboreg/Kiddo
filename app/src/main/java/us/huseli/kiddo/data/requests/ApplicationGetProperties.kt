@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.requests
 
+import androidx.compose.runtime.Immutable
 import com.google.gson.annotations.SerializedName
 import us.huseli.kiddo.data.AbstractRefRequest
 import us.huseli.kiddo.data.enums.ApplicationPropertyName
@@ -12,6 +13,7 @@ class ApplicationGetProperties(val properties: List<ApplicationPropertyName>) :
 
     override fun getParams(): Map<String, Any?> = mapOf("properties" to properties)
 
+    @Immutable
     data class Result(
         val language: String?,
         val muted: Boolean?,
@@ -20,6 +22,7 @@ class ApplicationGetProperties(val properties: List<ApplicationPropertyName>) :
         val version: Version?,
         val volume: Int?,
     ) {
+        @Immutable
         data class Version(
             val major: Int,
             val minor: Int,

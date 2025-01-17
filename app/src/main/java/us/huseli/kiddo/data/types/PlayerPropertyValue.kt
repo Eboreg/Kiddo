@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.types
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.AbstractListMembers
 import us.huseli.kiddo.data.enums.PlayerRepeat
 import us.huseli.kiddo.data.interfaces.IHasPlayerSpeed
@@ -7,6 +8,7 @@ import us.huseli.kiddo.data.interfaces.IHasPlayerTime
 import us.huseli.kiddo.data.interfaces.IHasPlayerTotalTime
 import us.huseli.kiddo.data.interfaces.IHasPlaylistId
 
+@Immutable
 data class PlayerPropertyValue(
     val audiostreams: List<PlayerAudioStream>?,
     val cachepercentage: Double?,

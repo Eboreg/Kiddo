@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.requests
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.AbstractItemRequest
 import us.huseli.kiddo.data.enums.ListFieldsAll
 import us.huseli.kiddo.data.requests.interfaces.IItemResult
@@ -15,5 +16,6 @@ class PlayerGetItem(
 
     override fun getParams(): Map<String, Any?> = mapOf("playerid" to playerId, "properties" to properties)
 
+    @Immutable
     data class Result(override val item: ListItemAll) : IItemResult<ListItemAll>
 }

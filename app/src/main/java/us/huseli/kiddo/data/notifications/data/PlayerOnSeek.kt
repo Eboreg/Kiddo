@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.notifications.data
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.interfaces.IHasPlayerSpeed
 import us.huseli.kiddo.data.interfaces.IHasPlayerId
 import us.huseli.kiddo.data.interfaces.IHasPlayerTime
@@ -8,6 +9,7 @@ import us.huseli.kiddo.data.types.PlayerNotificationsPlayerSeek
 import us.huseli.kiddo.data.notifications.interfaces.INotificationData
 import us.huseli.kiddo.data.types.GlobalTime
 
+@Immutable
 data class PlayerOnSeek(
     val item: NotificationsItem,
     val player: PlayerNotificationsPlayerSeek,
