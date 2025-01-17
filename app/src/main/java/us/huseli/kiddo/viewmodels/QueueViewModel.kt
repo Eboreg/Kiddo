@@ -12,11 +12,14 @@ import us.huseli.kiddo.data.interfaces.IHasPlaylistId
 import us.huseli.kiddo.data.notifications.Notification
 import us.huseli.kiddo.data.requests.PlaylistGetPlaylists
 import us.huseli.kiddo.data.types.interfaces.IListItemAll
+import us.huseli.kiddo.managers.websocket.KodiNotificationListener
 import us.huseli.retaintheme.extensions.launchOnIOThread
+import us.huseli.retaintheme.utils.AbstractBaseViewModel
 import javax.inject.Inject
 
 @HiltViewModel
-class QueueViewModel @Inject constructor(repository: Repository) : AbstractListeningViewModel(repository) {
+class QueueViewModel @Inject constructor(private val repository: Repository) : AbstractBaseViewModel(),
+    KodiNotificationListener {
     private val _imageBitmaps = MutableStateFlow<Map<String, ImageBitmap?>>(emptyMap())
     private val _playlists = MutableStateFlow<List<PlaylistGetPlaylists.ResultItem>>(emptyList())
     private val _playlistItems = MutableStateFlow<Map<Int, List<IListItemAll>>>(emptyMap())
@@ -25,6 +28,7 @@ class QueueViewModel @Inject constructor(repository: Repository) : AbstractListe
     val playlists: StateFlow<List<PlaylistGetPlaylists.ResultItem>> = _playlists.asStateFlow()
 
     init {
+        repository.registerNotificationListener(this)
         launchOnIOThread { getPlaylists() }
     }
 
@@ -62,7 +66,9 @@ class QueueViewModel @Inject constructor(repository: Repository) : AbstractListe
     }
 
     private suspend fun getPlaylistItems(playlistId: Int) {
-        _playlistItems.value += playlistId to repository.listPlaylistItems(playlistId)
+        val items = repository.listPlaylistItems(playlistId)?.items
+
+        if (items != null) _playlistItems.value += playlistId to items
     }
 
     private suspend fun getPlaylists() {
@@ -72,6 +78,11 @@ class QueueViewModel @Inject constructor(repository: Repository) : AbstractListe
                 getPlaylistItems(playlist.playlistid)
             }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        repository.unregisterNotificationListener(this)
     }
 
     override fun onKodiNotification(notification: Notification<*>) {

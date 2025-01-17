@@ -1,4 +1,4 @@
-package us.huseli.kiddo
+package us.huseli.kiddo.managers.jsonrpc
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow

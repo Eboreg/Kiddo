@@ -1,9 +1,9 @@
 package us.huseli.kiddo.data.requests
 
-import us.huseli.kiddo.data.AbstractRefRequest
+import us.huseli.kiddo.data.AbstractListRequest
 import us.huseli.kiddo.data.enums.AudioFieldsAlbum
 import us.huseli.kiddo.data.enums.ListFilterFieldsAlbums
-import us.huseli.kiddo.data.requests.interfaces.IListFilterRequest
+import us.huseli.kiddo.data.requests.interfaces.IListResult
 import us.huseli.kiddo.data.requests.interfaces.ISimpleFilter
 import us.huseli.kiddo.data.types.AudioDetailsAlbum
 import us.huseli.kiddo.data.types.ListFilter
@@ -14,24 +14,27 @@ import us.huseli.retaintheme.extensions.filterValuesNotNull
 import java.lang.reflect.Type
 
 class AudioLibraryGetAlbums(
-    val properties: List<AudioFieldsAlbum>?,
-    val limits: ListLimits? = null,
-    val sort: ListSort? = null,
+    override val properties: List<AudioFieldsAlbum> = listOf(
+        AudioFieldsAlbum.AlbumDuration,
+        AudioFieldsAlbum.Art,
+        AudioFieldsAlbum.Artist,
+        AudioFieldsAlbum.Genre,
+        AudioFieldsAlbum.Rating,
+        AudioFieldsAlbum.Title,
+        AudioFieldsAlbum.Year,
+    ),
+    override val limits: ListLimits? = null,
+    override val sort: ListSort? = null,
     override val filter: ListFilter<ListFilterFieldsAlbums>? = null,
+    override val simpleFilter: SimpleFilter? = null,
     val includeSingles: Boolean? = null,
     val allRoles: Boolean? = null,
-    override val simpleFilter: SimpleFilter? = null,
-) : AbstractRefRequest<AudioLibraryGetAlbums.Result>(),
-    IListFilterRequest<ListFilter<ListFilterFieldsAlbums>, AudioLibraryGetAlbums.SimpleFilter> {
+) : AbstractListRequest<AudioDetailsAlbum>() {
     override val typeOfResult: Type = Result::class.java
     override val method: String = "AudioLibrary.GetAlbums"
 
     override fun getParams(): Map<String, Any?> {
-        return mapOf(
-            "properties" to properties,
-            "limits" to limits,
-            "sort" to sort,
-            "filter" to getFilterParams(),
+        return super.getParams() + mapOf(
             "includesingles" to includeSingles,
             "allroles" to allRoles,
         )
@@ -80,7 +83,10 @@ class AudioLibraryGetAlbums(
     }
 
     data class Result(
-        val limits: ListLimitsReturned,
-        val albums: List<AudioDetailsAlbum>,
-    )
+        override val limits: ListLimitsReturned,
+        val albums: List<AudioDetailsAlbum>?,
+    ) : IListResult<AudioDetailsAlbum> {
+        override val items: List<AudioDetailsAlbum>?
+            get() = albums
+    }
 }

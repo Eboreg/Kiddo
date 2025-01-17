@@ -1,4 +1,4 @@
-package us.huseli.kiddo
+package us.huseli.kiddo.managers.websocket
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -21,18 +21,17 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import us.huseli.kiddo.Constants.PREF_KODI_HOST
 import us.huseli.kiddo.Constants.PREF_KODI_WEBSOCKET_PORT
+import us.huseli.kiddo.KodiConnectionError
+import us.huseli.kiddo.KodiError
+import us.huseli.kiddo.KodiWebsocketReceiveError
 import us.huseli.kiddo.data.notifications.Notification
 import us.huseli.retaintheme.utils.AbstractScopeHolder
 import us.huseli.retaintheme.utils.ILogger
 import javax.inject.Inject
 import javax.inject.Singleton
 
-interface KodiNotificationListener {
-    fun onKodiNotification(notification: Notification<*>)
-}
-
 @Singleton
-class KodiWebsocketEngine @Inject constructor(@ApplicationContext context: Context) :
+class WebsocketManager @Inject constructor(@ApplicationContext context: Context) :
     SharedPreferences.OnSharedPreferenceChangeListener, AbstractScopeHolder(), ILogger {
     enum class Status { Pending, Connecting, Connected, NoHostname, Error }
 

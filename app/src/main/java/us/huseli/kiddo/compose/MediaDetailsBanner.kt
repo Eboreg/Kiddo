@@ -4,12 +4,14 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -25,7 +27,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import us.huseli.kiddo.R
 
@@ -33,7 +35,8 @@ import us.huseli.kiddo.R
 fun MediaDetailsBanner(
     title: String,
     headlineStyle: TextStyle,
-    thumbnailWidth: Dp,
+    thumbnailSize: DpSize = DpSize(width = 140.dp, height = 140.dp),
+    thumbnailContentScale: ContentScale = ContentScale.FillWidth,
     subTitle: String? = null,
     rating: Double? = null,
     banner: ImageBitmap? = null,
@@ -41,7 +44,12 @@ fun MediaDetailsBanner(
     votes: String? = null,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.height(160.dp)) {
+    Box(
+        // modifier = modifier.height(160.dp)
+        modifier = modifier
+            .heightIn(max = thumbnailSize.height + 20.dp)
+            .height(IntrinsicSize.Min)
+    ) {
         banner?.also {
             Image(
                 bitmap = it,
@@ -53,23 +61,25 @@ fun MediaDetailsBanner(
         }
 
         Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(10.dp),
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .padding(10.dp)
         ) {
-            Surface(
-                modifier = Modifier.width(thumbnailWidth),
-                shape = MaterialTheme.shapes.extraSmall,
-                color = Color.Transparent,
-            ) {
-                thumbnail?.also {
+            thumbnail?.also {
+                Surface(
+                    shape = MaterialTheme.shapes.extraSmall,
+                    color = Color.Transparent,
+                    modifier = Modifier.size(thumbnailSize)
+                ) {
                     Image(
                         bitmap = it,
-                        modifier = Modifier.shadow(5.dp).fillMaxWidth(),
-                        contentScale = ContentScale.FillWidth,
+                        contentScale = thumbnailContentScale,
                         contentDescription = null,
+                        modifier = Modifier
+                            .shadow(5.dp)
+                            .fillMaxWidth()
                     )
                 }
             }
@@ -81,26 +91,43 @@ fun MediaDetailsBanner(
                 ),
                 modifier = Modifier
                     .fillMaxSize()
-                    .shadow(5.dp),
+                    .shadow(5.dp)
             ) {
                 Column(
+                    verticalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(10.dp),
-                    verticalArrangement = Arrangement.SpaceBetween,
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
                 ) {
-                    Text(title, style = headlineStyle, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        text = title,
+                        style = headlineStyle,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(vertical = 5.dp)
+                    )
 
-                    Column { subTitle?.also { Text(text = it, maxLines = 2, overflow = TextOverflow.Ellipsis) } }
+                    Row {
+                        subTitle?.also {
+                            Text(
+                                text = it,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(vertical = 5.dp)
+                            )
+                        }
+                    }
 
-                    Column {
+                    Row {
                         rating?.takeIf { it > 0.0 }?.also { rating ->
-                            RatingStars(rating)
-                            votes?.takeIf { it != "-1" }?.also {
-                                Text(
-                                    text = stringResource(R.string.x_votes, it),
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
+                            Column(modifier = Modifier.padding(vertical = 5.dp)) {
+                                RatingStars(rating)
+                                votes?.takeIf { it != "-1" }?.also {
+                                    Text(
+                                        text = stringResource(R.string.x_votes, it),
+                                        style = MaterialTheme.typography.bodySmall,
+                                    )
+                                }
                             }
                         }
                     }

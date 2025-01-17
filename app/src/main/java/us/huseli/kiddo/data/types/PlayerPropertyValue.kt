@@ -63,5 +63,5 @@ data class PlayerPropertyValue(
         videostreams = other.videostreams ?: videostreams,
     )
 
-    override fun toString(): String = memberPropertiesToString()
+    override fun toString(): String = nonNullPropertiesToString()
 }

@@ -44,5 +44,5 @@ data class VideoDetailsMovie(
     override val writer: List<String>? = null,
     override val year: Int? = null,
 ) : IVideoDetailsMovie, AbstractListMembers() {
-    override fun toString(): String = memberPropertiesToString()
+    override fun toString(): String = nonNullPropertiesToString()
 }

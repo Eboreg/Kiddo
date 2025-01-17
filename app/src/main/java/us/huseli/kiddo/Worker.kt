@@ -1,5 +1,8 @@
 package us.huseli.kiddo
 
+import android.content.Context
+import android.os.Build
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -29,6 +32,15 @@ import us.huseli.kiddo.data.requests.PlayerGetProperties
 import us.huseli.kiddo.data.requests.PlayerSeek
 import us.huseli.kiddo.data.requests.PlayerSetSubtitle
 import us.huseli.kiddo.data.types.PlayerPropertyValue
+import us.huseli.kiddo.managers.download.DownloadEvent
+import us.huseli.kiddo.managers.download.DownloadListener
+import us.huseli.kiddo.managers.download.DownloadManager
+import us.huseli.kiddo.managers.jsonrpc.JsonRpcManager
+import us.huseli.kiddo.managers.jsonrpc.KodiResponseListener
+import us.huseli.kiddo.managers.notification.NotificationData
+import us.huseli.kiddo.managers.notification.NotificationManager
+import us.huseli.kiddo.managers.websocket.KodiNotificationListener
+import us.huseli.kiddo.managers.websocket.WebsocketManager
 import us.huseli.retaintheme.extensions.setOrMerge
 import us.huseli.retaintheme.snackbar.SnackbarEngine
 import us.huseli.retaintheme.utils.AbstractScopeHolder
@@ -36,33 +48,37 @@ import us.huseli.retaintheme.utils.ILogger
 import kotlin.math.max
 
 class Worker(
-    private val jsonEngine: KodiJsonRpcEngine,
-    private val websocketEngine: KodiWebsocketEngine,
+    @ApplicationContext private val context: Context,
+    private val json: JsonRpcManager,
+    private val websocket: WebsocketManager,
+    private val download: DownloadManager,
+    private val notification: NotificationManager,
     private val repository: Repository,
-) : KodiNotificationListener, KodiResponseListener, AbstractScopeHolder(), ILogger {
+) : KodiNotificationListener, KodiResponseListener, AbstractScopeHolder(), ILogger, DownloadListener {
     private val _latestRequestIds = mutableMapOf<String, Int>()
     private val _timestamp = MutableStateFlow<Long>(System.currentTimeMillis())
 
     fun initialize() {
-        jsonEngine.registerListener(this)
-        websocketEngine.registerListener(this)
+        json.registerListener(this)
+        websocket.registerListener(this)
+        download.registerListener(this)
         reset()
 
         // If hostname changes, do some reloading.
         launchOnIOThread {
-            jsonEngine.hostname.filterNotNull().distinctUntilChanged().collect {
+            json.hostname.filterNotNull().distinctUntilChanged().collect {
                 reset()
             }
         }
 
         // Listen for error messages on JSON and websockets engines separately.
         launchOnMainThread {
-            jsonEngine.connectErrorString.filterNotNull().collect { error ->
+            json.connectErrorString.filterNotNull().collect { error ->
                 SnackbarEngine.addError(error)
             }
         }
         launchOnMainThread {
-            websocketEngine.connectErrorString.filterNotNull().collect { error ->
+            websocket.connectErrorString.filterNotNull().collect { error ->
                 SnackbarEngine.addError(error)
             }
         }
@@ -105,14 +121,14 @@ class Worker(
         }
 
         launchOnIOThread {
-            jsonEngine.connectError.collect { error ->
+            json.connectError.collect { error ->
                 if (error == null) reset()
             }
         }
     }
 
     private suspend fun fetchGuiProperties() =
-        jsonEngine.post(GuiGetProperties(properties = listOf(GuiPropertyName.Fullscreen)))
+        json.post(GuiGetProperties(properties = listOf(GuiPropertyName.Fullscreen)))
 
     private suspend fun fetchPlayerItem(playerId: Int) {
         val request = PlayerGetItem(
@@ -132,11 +148,11 @@ class Worker(
             ),
         )
 
-        jsonEngine.post(request)
+        json.post(request)
     }
 
     private suspend fun fetchPlayerProperties(playerId: Int) {
-        jsonEngine.post(
+        json.post(
             PlayerGetProperties(
                 playerId = playerId,
                 properties = listOf(
@@ -163,7 +179,7 @@ class Worker(
 
     private fun reset() {
         launchOnIOThread {
-            jsonEngine.post(
+            json.post(
                 ApplicationGetProperties(
                     properties = listOf(
                         ApplicationPropertyName.Name,
@@ -175,9 +191,9 @@ class Worker(
                 ),
             )
         }
-        launchOnIOThread { jsonEngine.post(PlayerGetActivePlayers()) }
+        launchOnIOThread { json.post(PlayerGetActivePlayers()) }
         launchOnIOThread { fetchGuiProperties() }
-        launchOnIOThread { jsonEngine.post(JsonRpcPermission()) }
+        launchOnIOThread { json.post(JsonRpcPermission()) }
     }
 
     override fun onKodiNotification(notification: Notification<*>) {
@@ -249,7 +265,7 @@ class Worker(
             repository.updatePlayerId(request.result.firstOrNull()?.playerid)
         }
         if (request is PlayerGetItem) {
-            repository.updatePlayerItem(request.result.item.takeIf { it.stringId != null })
+            repository.updatePlayerItem(request.result.item?.takeIf { it.stringId != null })
         }
         if (request is ApplicationSetVolume) {
             repository.updateVolume(request.result)
@@ -264,6 +280,56 @@ class Worker(
         }
         if (request is JsonRpcPermission) {
             repository.updatePermissions(request.result)
+        }
+    }
+
+    override fun onDownloadEvent(event: DownloadEvent) {
+        when (event) {
+            is DownloadEvent.Cancelled -> {
+                SnackbarEngine.addInfo(context.getString(R.string.x_download_cancelled, event.data.filename))
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    notification.handle(NotificationData.Cancel(id = event.data.id))
+                }
+            }
+
+            is DownloadEvent.Finished -> {
+                SnackbarEngine.addInfo(context.getString(R.string.x_download_finished, event.data.filename))
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    notification.handle(NotificationData.Cancel(id = event.data.id))
+                }
+            }
+
+            is DownloadEvent.Progress -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    notification.handle(
+                        NotificationData.Update(
+                            id = event.data.id,
+                            progress = event.progress.percent,
+                            text = event.progress.notificationText,
+                        )
+                    )
+                }
+            }
+
+            is DownloadEvent.Started -> {
+                SnackbarEngine.addInfo(context.getString(R.string.x_download_started, event.data.filename))
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    notification.handle(
+                        NotificationData.Add(
+                            id = event.data.id,
+                            ongoing = true,
+                            title = context.getString(R.string.downloading_x_ellipsis, event.data.filename),
+                            progress = 0,
+                            action = android.app.Notification.Action.Builder(
+                                null,
+                                context.getString(R.string.cancel),
+                                event.cancelIntent,
+                            ).build(),
+                        )
+                    )
+                }
+            }
         }
     }
 }

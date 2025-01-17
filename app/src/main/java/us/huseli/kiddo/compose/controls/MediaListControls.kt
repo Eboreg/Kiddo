@@ -49,9 +49,13 @@ fun MediaListControls(
     Surface {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = modifier.padding(vertical = 5.dp, horizontal = 10.dp)
+            modifier = modifier.padding(start = 10.dp, top = 5.dp, end = 10.dp, bottom = 10.dp)
         ) {
-            Row(horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth()) {
+            Row(
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 ToggleChip(
                     value = hasFilters,
                     onClick = onFilterClick,

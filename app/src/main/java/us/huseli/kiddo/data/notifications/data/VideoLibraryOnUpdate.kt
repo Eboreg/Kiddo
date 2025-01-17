@@ -4,9 +4,11 @@ import com.google.gson.annotations.SerializedName
 import us.huseli.kiddo.data.notifications.interfaces.INotificationData
 
 data class VideoLibraryOnUpdate(
-    val item: Item,
+    val id: Int?,
+    val type: Type?,
+    val item: Item?,
     val added: Boolean?,
-    val playcount: Int,
+    val playcount: Int?,
     val transaction: Boolean?,
 ) : INotificationData {
     @Suppress("unused")
@@ -21,4 +23,6 @@ data class VideoLibraryOnUpdate(
         val id: Int,
         val type: Type,
     )
+
+    fun theId(): Int? = id ?: item?.id
 }

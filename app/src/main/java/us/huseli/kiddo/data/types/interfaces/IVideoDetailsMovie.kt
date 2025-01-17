@@ -31,6 +31,9 @@ interface IVideoDetailsMovie : IVideoDetailsFile {
     val writer: List<String>?
     val year: Int?
 
+    val crew: Set<String>
+        get() = ((director ?: emptyList()) + (writer ?: emptyList())).toSet()
+
     val displayTitle: String
         get() = title?.takeIfNotBlank() ?: label
 }

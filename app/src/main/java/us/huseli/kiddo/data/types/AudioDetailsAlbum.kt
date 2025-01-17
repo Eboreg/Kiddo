@@ -43,5 +43,5 @@ data class AudioDetailsAlbum(
     override val votes: String? = null,
     override val year: Int? = null,
 ) : IAudioDetailsAlbum, AbstractListMembers() {
-    override fun toString(): String = memberPropertiesToString()
+    override fun toString(): String = nonNullPropertiesToString()
 }

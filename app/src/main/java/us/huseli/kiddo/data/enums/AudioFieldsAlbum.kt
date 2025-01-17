@@ -1,9 +1,10 @@
 package us.huseli.kiddo.data.enums
 
 import com.google.gson.annotations.SerializedName
+import us.huseli.kiddo.data.requests.interfaces.IRequestProperty
 
 @Suppress("unused")
-enum class AudioFieldsAlbum {
+enum class AudioFieldsAlbum : IRequestProperty {
     @SerializedName("title") Title,
     @SerializedName("description") Description,
     @SerializedName("artist") Artist,

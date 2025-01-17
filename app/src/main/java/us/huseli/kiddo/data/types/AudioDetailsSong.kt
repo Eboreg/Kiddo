@@ -57,5 +57,5 @@ data class AudioDetailsSong(
     val displayTitle: String
         get() = title?.takeIfNotBlank() ?: label
 
-    override fun toString(): String = memberPropertiesToString()
+    override fun toString(): String = nonNullPropertiesToString()
 }

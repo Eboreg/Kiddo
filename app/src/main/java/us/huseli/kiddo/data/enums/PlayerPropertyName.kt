@@ -1,9 +1,10 @@
 package us.huseli.kiddo.data.enums
 
 import com.google.gson.annotations.SerializedName
+import us.huseli.kiddo.data.requests.interfaces.IRequestProperty
 
 @Suppress("unused")
-enum class PlayerPropertyName {
+enum class PlayerPropertyName : IRequestProperty {
     @SerializedName("audiostreams") AudioStreams,
     @SerializedName("cachepercentage") CachePercentage,
     @SerializedName("canchangespeed") CanChangeSpeed,

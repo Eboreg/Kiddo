@@ -7,7 +7,10 @@ import java.lang.reflect.Type
 
 class FilesGetFileDetails(
     val file: String,
-    val properties: List<ListFieldsFiles>? = null,
+    val properties: List<ListFieldsFiles> = listOf(
+        ListFieldsFiles.MimeType,
+        ListFieldsFiles.Size,
+    ),
 ) : AbstractRefRequest<FilesGetFileDetails.Result>() {
     override val typeOfResult: Type = Result::class.java
     override val method: String = "Files.GetFileDetails"

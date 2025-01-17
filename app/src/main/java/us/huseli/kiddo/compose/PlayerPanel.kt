@@ -186,7 +186,7 @@ fun PlayerPanel(
                 }
 
                 Column(
-                    verticalArrangement = if (isCollapsed) Arrangement.SpaceEvenly else Arrangement.spacedBy(5.dp),
+                    verticalArrangement = Arrangement.SpaceEvenly,
                     modifier = Modifier
                         .fillMaxHeight()
                         .padding(vertical = 5.dp)
@@ -247,7 +247,7 @@ fun PlayerPanel(
             if (!isCollapsed) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     ToggleChip(
-                        value = properties?.repeat?.let { it != PlayerRepeat.Off },
+                        value = properties?.repeat != PlayerRepeat.Off,
                         onClick = { viewModel.cycleRepeat() },
                         label = { Text(stringResource(R.string.repeat)) },
                         enabled = properties?.canrepeat == true,
@@ -259,7 +259,7 @@ fun PlayerPanel(
                         },
                     )
                     ToggleChip(
-                        value = properties?.shuffled,
+                        value = properties?.shuffled == true,
                         onClick = { viewModel.toggleShuffle() },
                         label = { Text(stringResource(R.string.shuffle)) },
                         enabled = properties?.canshuffle == true,

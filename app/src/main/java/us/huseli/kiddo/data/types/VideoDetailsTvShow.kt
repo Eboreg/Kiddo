@@ -1,7 +1,9 @@
 package us.huseli.kiddo.data.types
 
+import androidx.compose.runtime.Immutable
 import us.huseli.kiddo.data.types.interfaces.IVideoDetailsTvShow
 
+@Immutable
 data class VideoDetailsTvShow(
     override val tvshowid: Int,
     override val label: String,

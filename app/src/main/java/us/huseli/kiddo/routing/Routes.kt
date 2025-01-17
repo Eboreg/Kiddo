@@ -6,28 +6,9 @@ import us.huseli.kiddo.compose.getValue
 import us.huseli.kiddo.data.enums.ListFilterFieldsAlbums
 import us.huseli.kiddo.data.enums.ListFilterFieldsMovies
 import us.huseli.kiddo.data.enums.ListFilterFieldsTvShows
-import us.huseli.kiddo.data.enums.ListFilterOperators
 import us.huseli.kiddo.data.types.ListFilter
 import us.huseli.kiddo.data.types.ListSort
 import us.huseli.retaintheme.extensions.takeIfNotBlank
-
-interface IMediaListRoute<Field : Any> {
-    val sortMethod: ListSort.Method?
-    val descending: Boolean?
-    val freetext: String?
-
-    fun getListSort(): ListSort? = sortMethod?.let {
-        ListSort(
-            method = it,
-            order = if (descending == true) ListSort.Order.Descending else ListSort.Order.Ascending,
-        )
-    }
-
-    fun hasSearch() = freetext?.takeIfNotBlank() != null
-
-    fun getFilter(): ListFilter<Field>?
-    fun hasFilters(): Boolean
-}
 
 @Serializable
 sealed class Routes {
@@ -64,6 +45,16 @@ sealed class Routes {
         override val sortMethod: ListSort.Method? = ListSort.Method.Title,
         override val descending: Boolean? = null,
     ) : Routes(), IMediaListRoute<ListFilterFieldsAlbums> {
+        override val freetextFiltersFields: List<ListFilterFieldsAlbums> = listOf(
+            ListFilterFieldsAlbums.Album,
+            ListFilterFieldsAlbums.AlbumArtist,
+            ListFilterFieldsAlbums.Artist,
+            ListFilterFieldsAlbums.Genre,
+            ListFilterFieldsAlbums.Year,
+        )
+        override val hasFilters: Boolean
+            get() = listOfNotNull(artist, genre, year, style, theme, album).isNotEmpty()
+
         fun applyFilterParams(params: List<MediaListFilterParameter>) = copy(
             album = params.getValue("album"),
             artist = params.getValue("artist"),
@@ -76,8 +67,8 @@ sealed class Routes {
         fun applyListSort(listSort: ListSort) =
             copy(sortMethod = listSort.method, descending = listSort.order == ListSort.Order.Descending)
 
-        override fun getFilter(): ListFilter<ListFilterFieldsAlbums>? {
-            val filters = listOf(
+        override fun getFilters(): List<ListFilter<ListFilterFieldsAlbums>> {
+            return listOfNotNull(
                 genre?.let { ListFilter(it, ListFilterFieldsAlbums.Genre) },
                 artist?.let {
                     ListFilter(
@@ -92,24 +83,7 @@ sealed class Routes {
                 theme?.let { ListFilter(it, ListFilterFieldsAlbums.Themes) },
                 album?.let { ListFilter(it, ListFilterFieldsAlbums.Album) },
             )
-
-            if (freetext?.takeIfNotBlank() != null) {
-                return ListFilter.and(
-                    *filters.toTypedArray(),
-                    ListFilter.or(
-                        ListFilter(freetext, ListFilterFieldsAlbums.Album, ListFilterOperators.Contains),
-                        ListFilter(freetext, ListFilterFieldsAlbums.AlbumArtist, ListFilterOperators.Contains),
-                        ListFilter(freetext, ListFilterFieldsAlbums.Artist, ListFilterOperators.Contains),
-                        ListFilter(freetext, ListFilterFieldsAlbums.Genre, ListFilterOperators.Contains),
-                        ListFilter(freetext, ListFilterFieldsAlbums.Year, ListFilterOperators.Contains),
-                    ),
-                )
-            }
-
-            return ListFilter.and(filters)
         }
-
-        override fun hasFilters() = listOfNotNull(artist, genre, year, style, theme, album).isNotEmpty()
     }
 
     @Serializable
@@ -122,7 +96,15 @@ sealed class Routes {
         override val sortMethod: ListSort.Method? = ListSort.Method.Title,
         override val descending: Boolean? = null,
     ) : Routes(), IMediaListRoute<ListFilterFieldsTvShows> {
-        override fun hasFilters(): Boolean = listOfNotNull(person, genre, year, title).isNotEmpty()
+        override val freetextFiltersFields: List<ListFilterFieldsTvShows> = listOf(
+            ListFilterFieldsTvShows.Director,
+            ListFilterFieldsTvShows.Title,
+            ListFilterFieldsTvShows.Actor,
+            ListFilterFieldsTvShows.Year,
+        )
+
+        override val hasFilters: Boolean
+            get() = listOfNotNull(person, genre, year, title).isNotEmpty()
 
         fun applyFilterParams(params: List<MediaListFilterParameter>) = copy(
             person = params.getValue("person"),
@@ -134,8 +116,8 @@ sealed class Routes {
         fun applyListSort(listSort: ListSort) =
             copy(sortMethod = listSort.method, descending = listSort.order == ListSort.Order.Descending)
 
-        override fun getFilter(): ListFilter<ListFilterFieldsTvShows>? {
-            val filters = listOf(
+        override fun getFilters(): List<ListFilter<ListFilterFieldsTvShows>> {
+            return listOfNotNull(
                 title?.takeIfNotBlank()?.let { ListFilter(value = it, field = ListFilterFieldsTvShows.Title) },
                 person?.takeIfNotBlank()?.let {
                     ListFilter(
@@ -148,20 +130,6 @@ sealed class Routes {
                 year?.takeIfNotBlank()?.let { ListFilter(value = it, field = ListFilterFieldsTvShows.Year) },
                 genre?.takeIfNotBlank()?.let { ListFilter(value = it, field = ListFilterFieldsTvShows.Genre) },
             )
-
-            if (freetext?.takeIfNotBlank() != null) {
-                return ListFilter.and(
-                    *filters.toTypedArray(),
-                    ListFilter.or(
-                        ListFilter(freetext, ListFilterFieldsTvShows.Director, ListFilterOperators.Contains),
-                        ListFilter(freetext, ListFilterFieldsTvShows.Title, ListFilterOperators.Contains),
-                        ListFilter(freetext, ListFilterFieldsTvShows.Actor, ListFilterOperators.Contains),
-                        ListFilter(freetext, ListFilterFieldsTvShows.Year, ListFilterOperators.Contains),
-                    )
-                )
-            }
-
-            return ListFilter.and(filters)
         }
     }
 
@@ -176,6 +144,17 @@ sealed class Routes {
         override val sortMethod: ListSort.Method? = ListSort.Method.Title,
         override val descending: Boolean? = null,
     ) : Routes(), IMediaListRoute<ListFilterFieldsMovies> {
+        override val freetextFiltersFields = listOf(
+            ListFilterFieldsMovies.Director,
+            ListFilterFieldsMovies.Title,
+            ListFilterFieldsMovies.Actor,
+            ListFilterFieldsMovies.Writers,
+            ListFilterFieldsMovies.Year,
+        )
+
+        override val hasFilters: Boolean
+            get() = listOfNotNull(person, genre, year, country, title).isNotEmpty()
+
         fun applyFilterParams(params: List<MediaListFilterParameter>) = copy(
             person = params.getValue("person"),
             title = params.getValue("title"),
@@ -187,8 +166,8 @@ sealed class Routes {
         fun applyListSort(listSort: ListSort) =
             copy(sortMethod = listSort.method, descending = listSort.order == ListSort.Order.Descending)
 
-        override fun getFilter(): ListFilter<ListFilterFieldsMovies>? {
-            val filters = listOf(
+        override fun getFilters(): List<ListFilter<ListFilterFieldsMovies>> {
+            return listOfNotNull(
                 genre?.let { ListFilter(value = it, field = ListFilterFieldsMovies.Genre) },
                 person?.let {
                     ListFilter(
@@ -203,23 +182,6 @@ sealed class Routes {
                 country?.let { ListFilter(value = it, field = ListFilterFieldsMovies.Country) },
                 title?.let { ListFilter(value = it, field = ListFilterFieldsMovies.Title) },
             )
-
-            if (freetext?.takeIfNotBlank() != null) {
-                return ListFilter.and(
-                    *filters.toTypedArray(),
-                    ListFilter.or(
-                        ListFilter(freetext, ListFilterFieldsMovies.Director, ListFilterOperators.Contains),
-                        ListFilter(freetext, ListFilterFieldsMovies.Title, ListFilterOperators.Contains),
-                        ListFilter(freetext, ListFilterFieldsMovies.Actor, ListFilterOperators.Contains),
-                        ListFilter(freetext, ListFilterFieldsMovies.Writers, ListFilterOperators.Contains),
-                        ListFilter(freetext, ListFilterFieldsMovies.Year, ListFilterOperators.Contains),
-                    )
-                )
-            }
-
-            return ListFilter.and(filters)
         }
-
-        override fun hasFilters() = listOfNotNull(person, genre, year, country, title).isNotEmpty()
     }
 }

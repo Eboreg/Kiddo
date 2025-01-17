@@ -49,7 +49,7 @@ fun LazyGridScope.MediaDetailsCast(
         Text(stringResource(R.string.cast), style = headlineStyle, modifier = modifier)
     }
 
-    items(cast, key = { it.order }) { member ->
+    items(cast, key = { "cast${it.order}" }) { member ->
         val background = LocalBasicColors.current.random()
         val portrait by flowPortrait(member.thumbnail?.takeIfNotBlank()).collectAsStateWithLifecycle()
 
@@ -79,10 +79,10 @@ fun LazyGridScope.MediaDetailsCast(
                 }
 
                 Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f),
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f),
+                        .fillMaxWidth()
                 ) {
                     Column(
                         modifier = Modifier.padding(5.dp),

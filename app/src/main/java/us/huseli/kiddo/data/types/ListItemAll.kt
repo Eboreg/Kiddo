@@ -109,9 +109,9 @@ data class ListItemAll(
     override val writer: List<String>?,
     override val year: Int?,
 ) : IListItemAll, AbstractListMembers() {
-    override fun listMemberProperties(): List<Pair<String, Any?>> {
-        return super.listMemberProperties().filterNot { it.first == "customproperties" }
+    override fun listNonNullProperties(): List<Pair<String, Any?>> {
+        return super.listNonNullProperties().filterNot { it.first == "customproperties" }
     }
 
-    override fun toString(): String = memberPropertiesToString()
+    override fun toString(): String = nonNullPropertiesToString()
 }

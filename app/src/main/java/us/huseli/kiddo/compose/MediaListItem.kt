@@ -6,16 +6,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.FlowRowOverflow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -28,15 +30,20 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import us.huseli.kiddo.compose.controls.NiceLinearProgressIndicator
 import us.huseli.retaintheme.extensions.takeIfNotEmpty
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MediaListItem(
     title: String,
     index: Int,
+    titleMaxLines: Int = 1,
     placeholderIcon: ImageVector? = null,
-    thumbnailWidth: Dp = 100.dp,
+    thumbnailSize: DpSize = DpSize(width = 100.dp, height = Dp.Unspecified),
+    thumbnailPadding: PaddingValues = PaddingValues(),
     isCurrentItem: Boolean = false,
     onClick: (() -> Unit)? = null,
     subTitle: @Composable ColumnScope.() -> Unit = {},
@@ -58,7 +65,7 @@ fun MediaListItem(
         headlineContent = {
             Text(
                 text = title,
-                maxLines = 1,
+                maxLines = titleMaxLines,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(bottom = 5.dp),
             )
@@ -66,10 +73,17 @@ fun MediaListItem(
         supportingContent = {
             Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 subTitle()
-                Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    genres?.takeIfNotEmpty()?.forEach { genre ->
-                        Badge(containerColor = MaterialTheme.colorScheme.primaryContainer) {
-                            Text(genre)
+                genres?.takeIfNotEmpty()?.also { genres ->
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        maxLines = 1,
+                        overflow = FlowRowOverflow.Clip,
+                    ) {
+                        genres.forEach { genre ->
+                            Badge(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                content = { Text(genre) },
+                            )
                         }
                     }
                 }
@@ -86,17 +100,7 @@ fun MediaListItem(
                     rating?.takeIf { it > 0.0 }?.let { RatingStars(it, starSize = 12.dp) }
                 }
                 progress?.also {
-                    LinearProgressIndicator(
-                        progress = { it },
-                        drawStopIndicator = {},
-                        trackColor = MaterialTheme.colorScheme.primaryContainer,
-                        color = MaterialTheme.colorScheme.primary,
-                        gapSize = 0.dp,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 5.dp)
-                            .height(3.dp)
-                    )
+                    NiceLinearProgressIndicator(progress = { it })
                 }
             }
         },
@@ -104,12 +108,15 @@ fun MediaListItem(
             if (thumbnail != null || placeholderIcon != null) {
                 Surface(
                     shape = RoundedCornerShape(3.dp),
-                    modifier = Modifier.width(thumbnailWidth),
+                    modifier = Modifier.size(thumbnailSize).padding(thumbnailPadding),
                 ) {
                     if (thumbnail != null) Image(
                         bitmap = thumbnail,
                         contentDescription = null,
-                        contentScale = ContentScale.FillWidth,
+                        contentScale = when {
+                            thumbnailSize.height == Dp.Unspecified -> ContentScale.FillWidth
+                            else -> ContentScale.Crop
+                        },
                         modifier = Modifier.fillMaxWidth(),
                     )
                     else if (placeholderIcon != null) Icon(

@@ -2,6 +2,7 @@ package us.huseli.kiddo.data.requests
 
 import us.huseli.kiddo.data.AbstractRefRequest
 import us.huseli.kiddo.data.enums.VideoFieldsSeason
+import us.huseli.kiddo.data.requests.interfaces.IListResult
 import us.huseli.kiddo.data.types.ListLimits
 import us.huseli.kiddo.data.types.ListLimitsReturned
 import us.huseli.kiddo.data.types.ListSort
@@ -9,8 +10,16 @@ import us.huseli.kiddo.data.types.VideoDetailsSeason
 import java.lang.reflect.Type
 
 class VideoLibraryGetSeasons(
+    val properties: List<VideoFieldsSeason> = listOf(
+        VideoFieldsSeason.Art,
+        VideoFieldsSeason.Episode,
+        VideoFieldsSeason.PlayCount,
+        VideoFieldsSeason.Season,
+        VideoFieldsSeason.Thumbnail,
+        VideoFieldsSeason.Title,
+        VideoFieldsSeason.WatchedEpisodes,
+    ),
     val tvShowId: Int? = null,
-    val properties: List<VideoFieldsSeason>? = null,
     val limits: ListLimits? = null,
     val sort: ListSort? = null,
 ) : AbstractRefRequest<VideoLibraryGetSeasons.Result>() {
@@ -27,7 +36,10 @@ class VideoLibraryGetSeasons(
     }
 
     data class Result(
-        val limits: ListLimitsReturned,
+        override val limits: ListLimitsReturned,
         val seasons: List<VideoDetailsSeason>?,
-    )
+    ) : IListResult<VideoDetailsSeason> {
+        override val items: List<VideoDetailsSeason>?
+            get() = seasons
+    }
 }

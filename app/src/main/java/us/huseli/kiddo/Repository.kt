@@ -15,18 +15,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import us.huseli.kiddo.Constants.PREF_ASKED_NOTIFICATION_PERMISSION
 import us.huseli.kiddo.Constants.PREF_KODI_HOST
 import us.huseli.kiddo.Constants.PREF_KODI_PASSWORD
 import us.huseli.kiddo.Constants.PREF_KODI_PORT
 import us.huseli.kiddo.Constants.PREF_KODI_USERNAME
 import us.huseli.kiddo.Constants.PREF_KODI_WEBSOCKET_PORT
-import us.huseli.kiddo.data.enums.AudioFieldsAlbum
-import us.huseli.kiddo.data.enums.AudioFieldsSong
 import us.huseli.kiddo.data.enums.GlobalToggle
 import us.huseli.kiddo.data.enums.GuiWindow
 import us.huseli.kiddo.data.enums.InputAction
-import us.huseli.kiddo.data.enums.ListFieldsAll
 import us.huseli.kiddo.data.enums.ListFieldsFiles
 import us.huseli.kiddo.data.enums.ListFilterFieldsAlbums
 import us.huseli.kiddo.data.enums.ListFilterFieldsEpisodes
@@ -34,10 +33,8 @@ import us.huseli.kiddo.data.enums.ListFilterFieldsMovies
 import us.huseli.kiddo.data.enums.ListFilterFieldsSongs
 import us.huseli.kiddo.data.enums.ListFilterFieldsTvShows
 import us.huseli.kiddo.data.enums.PlaylistType
-import us.huseli.kiddo.data.enums.VideoFieldsEpisode
 import us.huseli.kiddo.data.enums.VideoFieldsMovie
-import us.huseli.kiddo.data.enums.VideoFieldsSeason
-import us.huseli.kiddo.data.enums.VideoFieldsTvShow
+import us.huseli.kiddo.data.notifications.Notification
 import us.huseli.kiddo.data.requests.ApplicationSetMute
 import us.huseli.kiddo.data.requests.ApplicationSetVolume
 import us.huseli.kiddo.data.requests.AudioLibraryGetAlbumDetails
@@ -75,10 +72,13 @@ import us.huseli.kiddo.data.requests.VideoLibraryGetTvShowDetails
 import us.huseli.kiddo.data.requests.VideoLibraryGetTvShows
 import us.huseli.kiddo.data.requests.VideoLibrarySetMovieDetails
 import us.huseli.kiddo.data.requests.VideoLibrarySetTvShowDetails
+import us.huseli.kiddo.data.requests.interfaces.IListResult
 import us.huseli.kiddo.data.types.AudioDetailsAlbum
 import us.huseli.kiddo.data.types.AudioDetailsSong
 import us.huseli.kiddo.data.types.ListFilter
 import us.huseli.kiddo.data.types.ListItemAll
+import us.huseli.kiddo.data.types.ListItemFile
+import us.huseli.kiddo.data.types.ListLimits
 import us.huseli.kiddo.data.types.ListSort
 import us.huseli.kiddo.data.types.PlayerPropertyValue
 import us.huseli.kiddo.data.types.PlaylistItem
@@ -88,6 +88,13 @@ import us.huseli.kiddo.data.types.VideoDetailsSeason
 import us.huseli.kiddo.data.types.VideoDetailsTvShow
 import us.huseli.kiddo.data.types.interfaces.IAudioDetailsAlbum
 import us.huseli.kiddo.data.types.interfaces.IListItemAll
+import us.huseli.kiddo.managers.download.DownloadListener
+import us.huseli.kiddo.managers.download.DownloadManager
+import us.huseli.kiddo.managers.jsonrpc.JsonRpcManager
+import us.huseli.kiddo.managers.notification.NotificationManager
+import us.huseli.kiddo.managers.websocket.KodiNotificationListener
+import us.huseli.kiddo.managers.websocket.WebsocketManager
+import us.huseli.kiddo.paging.MediaPagingSource
 import us.huseli.retaintheme.RetainConnectionError
 import us.huseli.retaintheme.RetainHttpError
 import us.huseli.retaintheme.extensions.takeIfNotBlank
@@ -101,13 +108,17 @@ import javax.inject.Singleton
 
 @Singleton
 class Repository @Inject constructor(
-    private val jsonEngine: KodiJsonRpcEngine,
-    private val websocketEngine: KodiWebsocketEngine,
+    private val json: JsonRpcManager,
+    private val websocket: WebsocketManager,
     @ApplicationContext private val context: Context,
-) : AbstractScopeHolder(), ILogger {
+    notification: NotificationManager,
+    private val download: DownloadManager,
+) : AbstractScopeHolder(), ILogger, SharedPreferences.OnSharedPreferenceChangeListener {
     private val preferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
-    private val worker: Worker = Worker(jsonEngine, websocketEngine, this)
+    private val worker: Worker = Worker(context, json, websocket, download, notification, this)
 
+    private val _askedNotificationPermission =
+        MutableStateFlow<Boolean>(preferences.getBoolean(PREF_ASKED_NOTIFICATION_PERMISSION, false))
     private val _isMuted = MutableStateFlow<Boolean?>(null)
     private val _isSeeking = MutableStateFlow(false)
     private val _permissions = MutableStateFlow<JsonRpcPermission.Result?>(null)
@@ -120,16 +131,16 @@ class Repository @Inject constructor(
     private val _playerTotalTime = MutableStateFlow<Long?>(null)
     private val _volume = MutableStateFlow<Int?>(null)
 
-    @Suppress("DEPRECATION")
-    val connectErrorStrings: Flow<List<String>> = combine(
-        websocketEngine.connectError.map { it?.toString() }.distinctUntilChanged(),
-        jsonEngine.connectError.map { it?.toString() }.distinctUntilChanged(),
+    val askedNotificationPermission = _askedNotificationPermission.asStateFlow()
+    @Suppress("DEPRECATION") val connectErrorStrings: Flow<List<String>> = combine(
+        websocket.connectError.map { it?.toString() }.distinctUntilChanged(),
+        json.connectError.map { it?.toString() }.distinctUntilChanged(),
     ) { websocket, json -> listOfNotNull(websocket, json) }
-    val hostname: StateFlow<String?> = jsonEngine.hostname
+    val hostname: StateFlow<String?> = json.hostname
     val isMuted = _isMuted.filterNotNull()
     val isPlaying: Flow<Boolean> = _playerSpeed.map { it == 1 }
-    val jsonPort: StateFlow<Int> = jsonEngine.port
-    val password: StateFlow<String?> = jsonEngine.password
+    val jsonPort: StateFlow<Int> = json.port
+    val password: StateFlow<String?> = json.password
     val playerCoverImage: StateFlow<ImageBitmap?> = _playerItem.map {
         val path = it?.art?.poster?.takeIfNotBlank()
             ?: it?.art?.fanart?.takeIfNotBlank()
@@ -149,33 +160,53 @@ class Repository @Inject constructor(
     val playerTotalTime: StateFlow<Long?> = _playerTotalTime.asStateFlow()
     val playerTotalTimeSeconds: StateFlow<Int?> =
         _playerTotalTime.filterNotNull().map { it.div(1000).toInt() }.distinctUntilChanged().stateWhileSubscribed()
-    val username: StateFlow<String?> = jsonEngine.username
+    val username: StateFlow<String?> = json.username
     val volume: StateFlow<Int?> = _volume.asStateFlow()
-    val websocketPort: StateFlow<Int> = websocketEngine.port
-    val websocketStatus: StateFlow<KodiWebsocketEngine.Status> = websocketEngine.status
+    val websocketPort: StateFlow<Int> = websocket.port
+    val websocketStatus: StateFlow<WebsocketManager.Status> = websocket.status
 
     init {
         worker.initialize()
+        preferences.registerOnSharedPreferenceChangeListener(this)
+    }
+
+    fun albumPagingSource(
+        filter: ListFilter<ListFilterFieldsAlbums>? = null,
+        sort: ListSort? = ListSort(method = ListSort.Method.Title),
+        simpleFilter: AudioLibraryGetAlbums.SimpleFilter? = null,
+        includeSingles: Boolean? = null,
+        allRoles: Boolean? = null,
+    ): MediaPagingSource<AudioDetailsAlbum> {
+        return MediaPagingSource { limits ->
+            listAlbums(
+                filter = filter,
+                sort = sort,
+                simpleFilter = simpleFilter,
+                includeSingles = includeSingles,
+                allRoles = allRoles,
+                limits = limits,
+            )
+        }
     }
 
     suspend fun cycleRepeat() = _playerId.value?.let {
-        jsonEngine.post(PlayerSetRepeat(playerId = it, repeat = PlayerSetRepeat.Repeat.Cycle))
+        json.post(PlayerSetRepeat(playerId = it, repeat = PlayerSetRepeat.Repeat.Cycle))
     }
 
     suspend fun decreasePlayerSpeed() = _playerId.value?.let {
-        jsonEngine.post(PlayerSetSpeed(playerId = it, type = PlayerSetSpeed.ParamType.Decrement))
+        json.post(PlayerSetSpeed(playerId = it, type = PlayerSetSpeed.ParamType.Decrement))
     }
 
     @Suppress("unused")
     suspend fun decreasePlayerTempo() = _playerId.value?.let {
-        jsonEngine.post(PlayerSetTempo(playerId = it, type = PlayerSetTempo.ParamType.Decrement))
+        json.post(PlayerSetTempo(playerId = it, type = PlayerSetTempo.ParamType.Decrement))
     }
 
     suspend fun decreaseVolume() =
-        jsonEngine.post(ApplicationSetVolume(type = ApplicationSetVolume.ParamType.Decrement))
+        json.post(ApplicationSetVolume(type = ApplicationSetVolume.ParamType.Decrement))
 
     suspend fun disableSubtitle() = _playerId.value?.let {
-        jsonEngine.post(
+        json.post(
             PlayerSetSubtitle(
                 playerId = it,
                 subtitle = PlayerSetSubtitle.Subtitle.Off,
@@ -184,9 +215,17 @@ class Repository @Inject constructor(
         )
     }
 
+    suspend fun downloadFile(path: String, localUri: Uri, extra: Any? = null) {
+        val baseUrl = json.url.filterNotNull().first()
+        val url = json.post(FilesPrepareDownload(path = path))
+            .resultOrNull?.details?.path?.let { "$baseUrl/$it" }
+
+        if (url != null) download.downloadFile(url, localUri, path, extra = extra)
+    }
+
     suspend fun enqueueAlbum(details: IAudioDetailsAlbum) {
         listPlaylists()?.find { it.type == PlaylistType.Audio }?.also { playlist ->
-            val request = jsonEngine.post(
+            val request = json.post(
                 PlaylistAdd(
                     playlistId = playlist.playlistid,
                     item = PlaylistItem(albumId = details.albumid),
@@ -200,64 +239,37 @@ class Repository @Inject constructor(
 
     suspend fun enqueueVideo(item: PlaylistItem, title: String) {
         listPlaylists()?.find { it.type == PlaylistType.Video }?.also { playlist ->
-            val request = jsonEngine.post(PlaylistAdd(playlistId = playlist.playlistid, item = item))
+            val request = json.post(PlaylistAdd(playlistId = playlist.playlistid, item = item))
 
             if (request.resultOrNull == "OK") SnackbarEngine.addInfo(context.getString(R.string.x_was_enqueued, title))
         }
     }
 
-    suspend fun executeInputAction(action: InputAction) = jsonEngine.post(InputExecuteAction(action = action))
+    suspend fun executeInputAction(action: InputAction) = json.post(InputExecuteAction(action = action))
 
-    fun flowStreamIntent(path: String, defaultMimeType: String): Flow<Intent?> = jsonEngine.url.map { baseUrl ->
-        val mimeBase = defaultMimeType.takeWhile { it != '/' } + "/"
-        val details = jsonEngine.post(
-            FilesGetFileDetails(file = path, properties = listOf(ListFieldsFiles.MimeType, ListFieldsFiles.Title))
-        ).resultOrNull?.filedetails
-        val mimeType = details?.mimetype?.takeIf { it.startsWith(mimeBase) } ?: defaultMimeType
-        val url = jsonEngine.post(FilesPrepareDownload(path = path))
-            .resultOrNull?.details?.path?.let { "$baseUrl/$it" }
-
-        url?.let {
-            Intent(Intent.ACTION_VIEW).apply {
-                setDataAndTypeAndNormalize(Uri.parse(it), mimeType)
-                details?.title?.also { putExtra("title", it) }
-            }
-        }
+    fun flowStreamIntent(
+        path: String,
+        defaultMimeType: String,
+        title: String? = null,
+    ): Flow<Intent?> = json.url.filterNotNull().map { baseUrl ->
+        getStreamIntent(
+            baseUrl = baseUrl,
+            path = path,
+            defaultMimeType = defaultMimeType,
+            title = title,
+        )
     }
 
-    suspend fun getAlbumDetails(id: Int): AudioDetailsAlbum? = jsonEngine.post(
-        AudioLibraryGetAlbumDetails(
-            albumId = id,
-            properties = listOf(
-                AudioFieldsAlbum.AlbumDuration,
-                AudioFieldsAlbum.AlbumStatus,
-                AudioFieldsAlbum.Art,
-                AudioFieldsAlbum.Artist,
-                AudioFieldsAlbum.ArtistId,
-                AudioFieldsAlbum.Compilation,
-                AudioFieldsAlbum.Description,
-                AudioFieldsAlbum.DisplayArtist,
-                AudioFieldsAlbum.FanArt,
-                AudioFieldsAlbum.Genre,
-                AudioFieldsAlbum.Mood,
-                AudioFieldsAlbum.PlayCount,
-                AudioFieldsAlbum.Rating,
-                AudioFieldsAlbum.SongGenres,
-                AudioFieldsAlbum.Style,
-                AudioFieldsAlbum.Theme,
-                AudioFieldsAlbum.Thumbnail,
-                AudioFieldsAlbum.Title,
-                AudioFieldsAlbum.Type,
-                AudioFieldsAlbum.Votes,
-                AudioFieldsAlbum.Year,
-            )
-        )
-    ).resultOrNull?.albumdetails
+    suspend fun getFileDetails(file: String): ListItemFile? =
+        json.post(FilesGetFileDetails(file = file)).resultOrNull?.filedetails
+
+    suspend fun getAlbumDetails(id: Int): AudioDetailsAlbum? =
+        json.post(AudioLibraryGetAlbumDetails(albumId = id)).resultOrNull?.item
 
     suspend fun getImageBitmap(path: String): ImageBitmap? {
         return try {
-            jsonEngine.hostname.value?.let { host ->
-                val url = "http://$host:${jsonEngine.port.value}/image/${URLEncoder.encode(path, "UTF-8")}"
+            json.hostname.value?.let { host ->
+                val url = "http://$host:${json.port.value}/image/${URLEncoder.encode(path, "UTF-8")}"
                 Request(url = url).getBitmap()?.asImageBitmap()
             }
         } catch (e: Throwable) {
@@ -271,79 +283,39 @@ class Repository @Inject constructor(
         }
     }
 
-    suspend fun getMovieDetails(id: Int): VideoDetailsMovie? = jsonEngine.post(
-        VideoLibraryGetMovieDetails(
-            movieId = id,
-            properties = listOf(
-                VideoFieldsMovie.Art,
-                VideoFieldsMovie.Cast,
-                VideoFieldsMovie.Country,
-                VideoFieldsMovie.Director,
-                VideoFieldsMovie.Fanart,
-                VideoFieldsMovie.File,
-                VideoFieldsMovie.Genre,
-                VideoFieldsMovie.LastPlayed,
-                VideoFieldsMovie.OriginalTitle,
-                VideoFieldsMovie.PlayCount,
-                VideoFieldsMovie.Plot,
-                VideoFieldsMovie.PlotOutline,
-                VideoFieldsMovie.Rating,
-                VideoFieldsMovie.Resume,
-                VideoFieldsMovie.Runtime,
-                VideoFieldsMovie.Tag,
-                VideoFieldsMovie.Tagline,
-                VideoFieldsMovie.Thumbnail,
-                VideoFieldsMovie.Title,
-                VideoFieldsMovie.Votes,
-                VideoFieldsMovie.Year,
-            ),
-        )
-    ).resultOrNull?.moviedetails
+    suspend fun getMovieDetails(id: Int): VideoDetailsMovie? =
+        json.post(VideoLibraryGetMovieDetails(movieId = id)).resultOrNull?.item
 
-    suspend fun getTvShowDetails(tvShowId: Int): VideoDetailsTvShow? = jsonEngine.post(
-        VideoLibraryGetTvShowDetails(
-            tvShowId = tvShowId,
-            properties = listOf(
-                VideoFieldsTvShow.Art,
-                VideoFieldsTvShow.Cast,
-                VideoFieldsTvShow.Episode,
-                VideoFieldsTvShow.Fanart,
-                VideoFieldsTvShow.Genre,
-                VideoFieldsTvShow.OriginalTitle,
-                VideoFieldsTvShow.PlayCount,
-                VideoFieldsTvShow.Plot,
-                VideoFieldsTvShow.Rating,
-                VideoFieldsTvShow.Runtime,
-                VideoFieldsTvShow.Season,
-                VideoFieldsTvShow.Tag,
-                VideoFieldsTvShow.Thumbnail,
-                VideoFieldsTvShow.Title,
-                VideoFieldsTvShow.Votes,
-                VideoFieldsTvShow.WatchedEpisodes,
-                VideoFieldsTvShow.Year,
-            ),
+    suspend fun getStreamIntent(path: String, defaultMimeType: String, title: String? = null): Intent? =
+        getStreamIntent(
+            baseUrl = json.url.filterNotNull().first(),
+            path = path,
+            defaultMimeType = defaultMimeType,
+            title = title,
         )
-    ).resultOrNull?.tvshowdetails
+
+    suspend fun getTvShowDetails(tvShowId: Int): VideoDetailsTvShow? =
+        json.post(VideoLibraryGetTvShowDetails(tvShowId = tvShowId)).resultOrNull?.item
 
     suspend fun goToNextItem() = _playerId.value?.let {
-        jsonEngine.post(PlayerGoTo(playerId = it, to = PlayerGoTo.To.Next))
+        json.post(PlayerGoTo(playerId = it, to = PlayerGoTo.To.Next))
     }
 
     suspend fun goToPreviousItem() = _playerId.value?.let {
-        jsonEngine.post(PlayerGoTo(playerId = it, to = PlayerGoTo.To.Previous))
+        json.post(PlayerGoTo(playerId = it, to = PlayerGoTo.To.Previous))
     }
 
     suspend fun increasePlayerSpeed() = _playerId.value?.let {
-        jsonEngine.post(PlayerSetSpeed(playerId = it, type = PlayerSetSpeed.ParamType.Increment))
+        json.post(PlayerSetSpeed(playerId = it, type = PlayerSetSpeed.ParamType.Increment))
     }
 
     @Suppress("unused")
     suspend fun increasePlayerTempo() = _playerId.value?.let {
-        jsonEngine.post(PlayerSetTempo(playerId = it, type = PlayerSetTempo.ParamType.Increment))
+        json.post(PlayerSetTempo(playerId = it, type = PlayerSetTempo.ParamType.Increment))
     }
 
     suspend fun increaseVolume() =
-        jsonEngine.post(ApplicationSetVolume(type = ApplicationSetVolume.ParamType.Increment))
+        json.post(ApplicationSetVolume(type = ApplicationSetVolume.ParamType.Increment))
 
     fun incrementPlayerElapsedTime(value: Long) {
         if (!_isSeeking.value) _playerElapsedTime.value += value
@@ -355,26 +327,19 @@ class Repository @Inject constructor(
         simpleFilter: AudioLibraryGetAlbums.SimpleFilter? = null,
         includeSingles: Boolean? = null,
         allRoles: Boolean? = null,
-    ): List<AudioDetailsAlbum>? = jsonEngine.post(
+        limits: ListLimits? = null,
+    ): IListResult<AudioDetailsAlbum>? = json.post(
         AudioLibraryGetAlbums(
-            properties = listOf(
-                AudioFieldsAlbum.AlbumDuration,
-                AudioFieldsAlbum.Art,
-                AudioFieldsAlbum.Artist,
-                AudioFieldsAlbum.Genre,
-                AudioFieldsAlbum.Rating,
-                AudioFieldsAlbum.Title,
-                AudioFieldsAlbum.Year,
-            ),
             filter = filter,
             sort = sort,
             simpleFilter = simpleFilter,
             includeSingles = includeSingles,
             allRoles = allRoles,
+            limits = limits,
         )
-    ).resultOrNull?.albums
+    ).resultOrNull
 
-    suspend fun listAlbumSongs(albumId: Int): List<AudioDetailsSong>? =
+    suspend fun listAlbumSongs(albumId: Int): IListResult<AudioDetailsSong>? =
         listSongs(simpleFilter = AudioLibraryGetSongs.SimpleFilter(albumId = albumId))
 
     suspend fun listEpisodes(
@@ -383,94 +348,84 @@ class Repository @Inject constructor(
         sort: ListSort? = ListSort(method = ListSort.Method.Episode),
         filter: ListFilter<ListFilterFieldsEpisodes>? = null,
         simpleFilter: VideoLibraryGetEpisodes.SimpleFilter? = null,
-    ): List<VideoDetailsEpisode>? = jsonEngine.post(
+    ): IListResult<VideoDetailsEpisode>? = json.post(
         VideoLibraryGetEpisodes(
             tvShowId = tvShowId,
             season = season,
-            properties = listOf(
-                VideoFieldsEpisode.Art,
-                VideoFieldsEpisode.Episode,
-                VideoFieldsEpisode.FanArt,
-                VideoFieldsEpisode.File,
-                VideoFieldsEpisode.OriginalTitle,
-                VideoFieldsEpisode.PlayCount,
-                VideoFieldsEpisode.Plot,
-                VideoFieldsEpisode.Rating,
-                VideoFieldsEpisode.Resume,
-                VideoFieldsEpisode.Runtime,
-                VideoFieldsEpisode.Season,
-                VideoFieldsEpisode.SeasonId,
-                VideoFieldsEpisode.Thumbnail,
-                VideoFieldsEpisode.Title,
-            ),
             sort = sort,
             filter = filter,
             simpleFilter = simpleFilter,
         )
-    ).resultOrNull?.episodes
+    ).resultOrNull
 
     suspend fun listMovies(
         simpleFilter: VideoLibraryGetMovies.SimpleFilter? = null,
         filter: ListFilter<ListFilterFieldsMovies>? = null,
         sort: ListSort? = ListSort(method = ListSort.Method.Title),
-    ): List<VideoDetailsMovie>? = jsonEngine.post(
+        limits: ListLimits? = null,
+    ): IListResult<VideoDetailsMovie>? = json.post(
         VideoLibraryGetMovies(
-            properties = listOf(
-                VideoFieldsMovie.Art,
-                VideoFieldsMovie.Director,
-                VideoFieldsMovie.File,
-                VideoFieldsMovie.Genre,
-                VideoFieldsMovie.LastPlayed,
-                VideoFieldsMovie.PlayCount,
-                VideoFieldsMovie.Rating,
-                VideoFieldsMovie.Resume,
-                VideoFieldsMovie.Runtime,
-                VideoFieldsMovie.Tagline,
-                VideoFieldsMovie.Title,
-                VideoFieldsMovie.Year,
-            ),
             simpleFilter = simpleFilter,
             filter = filter,
             sort = sort,
+            limits = limits,
         )
-    ).resultOrNull?.movies
+    ).resultOrNull
 
-    suspend fun listPlaylistItems(playlistId: Int): List<ListItemAll> = jsonEngine.post(
-        PlaylistGetItems(
-            playlistId = playlistId,
-            properties = listOf(
-                ListFieldsAll.Artist,
-                ListFieldsAll.CustomProperties,
-                ListFieldsAll.Director,
-                ListFieldsAll.Duration,
-                ListFieldsAll.File,
-                ListFieldsAll.Runtime,
-                ListFieldsAll.Thumbnail,
-                ListFieldsAll.Title,
-            ),
-        )
-    ).resultOrNull?.items ?: emptyList()
+    suspend fun listPlaylistItems(playlistId: Int): IListResult<ListItemAll>? =
+        json.post(PlaylistGetItems(playlistId = playlistId)).resultOrNull
 
-    suspend fun listPlaylists() = jsonEngine.post(PlaylistGetPlaylists()).resultOrNull
+    suspend fun listPlaylists() = json.post(PlaylistGetPlaylists()).resultOrNull
 
     suspend fun listSeasons(
         tvShowId: Int,
         sort: ListSort? = ListSort(method = ListSort.Method.Season),
-    ): List<VideoDetailsSeason>? = jsonEngine.post(
-        VideoLibraryGetSeasons(
-            tvShowId = tvShowId,
-            properties = listOf(
-                VideoFieldsSeason.Art,
-                VideoFieldsSeason.Episode,
-                VideoFieldsSeason.PlayCount,
-                VideoFieldsSeason.Season,
-                VideoFieldsSeason.Thumbnail,
-                VideoFieldsSeason.Title,
-                VideoFieldsSeason.WatchedEpisodes,
-            ),
-            sort = sort,
-        )
-    ).resultOrNull?.seasons
+    ): IListResult<VideoDetailsSeason>? =
+        json.post(VideoLibraryGetSeasons(tvShowId = tvShowId, sort = sort)).resultOrNull
+
+    data class SimilarMovie(
+        val movie: VideoDetailsMovie,
+        val castMatch: Int,
+        val tagMatch: Int,
+        val genreMatch: Int,
+        val crewMatch: Int,
+    ) : Comparable<SimilarMovie> {
+        val weightedMatch: Int
+            get() = crewMatch + castMatch + tagMatch + genreMatch
+
+        override fun compareTo(other: SimilarMovie): Int = weightedMatch - other.weightedMatch
+    }
+
+    suspend fun listSimilarMovies(movie: VideoDetailsMovie, max: Int = 10): List<SimilarMovie> {
+        val movies = json.post(
+            VideoLibraryGetMovies(
+                properties = listOf(
+                    VideoFieldsMovie.Art,
+                    VideoFieldsMovie.Cast,
+                    VideoFieldsMovie.Director,
+                    VideoFieldsMovie.Genre,
+                    VideoFieldsMovie.Tag,
+                    VideoFieldsMovie.Title,
+                    VideoFieldsMovie.Writer,
+                ),
+            )
+        ).resultOrNull?.items ?: emptyList()
+
+        val similar = movies.filter { it.movieid != movie.movieid }.map { other ->
+            val cast = movie.cast?.map { it.name } ?: emptyList()
+            val otherCast = other.cast?.map { it.name } ?: emptyList()
+
+            SimilarMovie(
+                movie = other,
+                castMatch = cast.filter { otherCast.contains(it) }.size,
+                tagMatch = movie.tag?.filter { other.tag?.contains(it) == true }?.size ?: 0,
+                genreMatch = movie.genre?.filter { other.genre?.contains(it) == true }?.size ?: 0,
+                crewMatch = movie.crew.filter { other.crew.contains(it) }.size,
+            )
+        }
+
+        return similar.sortedDescending().filter { it.weightedMatch > 0 }.take(max)
+    }
 
     suspend fun listSongs(
         filter: ListFilter<ListFilterFieldsSongs>? = null,
@@ -479,22 +434,8 @@ class Repository @Inject constructor(
         includeSingles: Boolean? = null,
         singlesOnly: Boolean? = null,
         allRoles: Boolean? = null,
-    ): List<AudioDetailsSong>? = jsonEngine.post(
+    ): IListResult<AudioDetailsSong>? = json.post(
         AudioLibraryGetSongs(
-            properties = listOf(
-                AudioFieldsSong.Artist,
-                AudioFieldsSong.Bitrate,
-                AudioFieldsSong.Disc,
-                AudioFieldsSong.DisplayArtist,
-                AudioFieldsSong.Duration,
-                AudioFieldsSong.File,
-                AudioFieldsSong.Genre,
-                AudioFieldsSong.Mood,
-                AudioFieldsSong.PlayCount,
-                AudioFieldsSong.Title,
-                AudioFieldsSong.Track,
-                AudioFieldsSong.Year,
-            ),
             sort = sort,
             simpleFilter = simpleFilter,
             filter = filter,
@@ -502,67 +443,67 @@ class Repository @Inject constructor(
             singlesOnly = singlesOnly,
             allRoles = allRoles,
         )
-    ).resultOrNull?.songs
+    ).resultOrNull
 
     suspend fun listTvShows(
         filter: ListFilter<ListFilterFieldsTvShows>? = null,
         sort: ListSort? = ListSort(method = ListSort.Method.Title),
         simpleFilter: VideoLibraryGetTvShows.SimpleFilter? = null,
-    ): List<VideoDetailsTvShow>? = jsonEngine.post(
+        limits: ListLimits? = null,
+    ): IListResult<VideoDetailsTvShow>? = json.post(
         VideoLibraryGetTvShows(
-            properties = listOf(
-                VideoFieldsTvShow.Art,
-                VideoFieldsTvShow.Fanart,
-                VideoFieldsTvShow.Episode,
-                VideoFieldsTvShow.Genre,
-                VideoFieldsTvShow.PlayCount,
-                VideoFieldsTvShow.Plot,
-                VideoFieldsTvShow.Rating,
-                VideoFieldsTvShow.Season,
-                VideoFieldsTvShow.Tag,
-                VideoFieldsTvShow.Thumbnail,
-                VideoFieldsTvShow.Title,
-                VideoFieldsTvShow.Votes,
-                VideoFieldsTvShow.WatchedEpisodes,
-                VideoFieldsTvShow.Year,
-            ),
             sort = sort,
             filter = filter,
             simpleFilter = simpleFilter,
+            limits = limits,
         )
-    ).resultOrNull?.tvshows
+    ).resultOrNull
 
     fun mergePlayerProperties(value: PlayerPropertyValue) {
         _playerProperties.value = _playerProperties.value?.merge(value) ?: value
     }
 
-    suspend fun openSubtitleSearch() = jsonEngine.post(GuiActivateWindow(window = GuiWindow.SubtitleSearch))
-
-    suspend fun playAlbum(albumId: Int) = jsonEngine.post(PlayerOpen.Item(albumId = albumId))
-
-    suspend fun playEpisode(episodeId: Int) = jsonEngine.post(PlayerOpen.Item(episodeId = episodeId))
-
-    suspend fun playerOpenPlaylist(playlistId: Int, position: Int? = null) =
-        jsonEngine.post(PlayerOpen.Playlist(playlistId = playlistId, position = position))
-
-    suspend fun playMovie(movieId: Int) = jsonEngine.post(PlayerOpen.Item(movieId = movieId))
-
-    suspend fun playOrPause() = _playerId.value?.let {
-        jsonEngine.post(PlayerPlayPause(playerId = it))
+    fun moviePagingSource(
+        simpleFilter: VideoLibraryGetMovies.SimpleFilter? = null,
+        filter: ListFilter<ListFilterFieldsMovies>? = null,
+        sort: ListSort? = ListSort(method = ListSort.Method.Title),
+    ): MediaPagingSource<VideoDetailsMovie> = MediaPagingSource { limits ->
+        listMovies(simpleFilter = simpleFilter, filter = filter, sort = sort, limits = limits)
     }
 
-    suspend fun playSong(songId: Int) = jsonEngine.post(PlayerOpen.Item(songId = songId))
+    suspend fun openSubtitleSearch() = json.post(GuiActivateWindow(window = GuiWindow.SubtitleSearch))
 
-    fun registerNotificationListener(listener: KodiNotificationListener) = websocketEngine.registerListener(listener)
+    suspend fun playAlbum(albumId: Int) = json.post(PlayerOpen.Item(albumId = albumId))
+
+    suspend fun playEpisode(episodeId: Int) = json.post(PlayerOpen.Item(episodeId = episodeId))
+
+    suspend fun playerOpenPlaylist(playlistId: Int, position: Int? = null) =
+        json.post(PlayerOpen.Playlist(playlistId = playlistId, position = position))
+
+    suspend fun playMovie(movieId: Int) = json.post(PlayerOpen.Item(movieId = movieId))
+
+    suspend fun playOrPause() = _playerId.value?.let {
+        json.post(PlayerPlayPause(playerId = it))
+    }
+
+    suspend fun playSong(songId: Int) = json.post(PlayerOpen.Item(songId = songId))
+
+    fun registerDownloadListener(listener: DownloadListener) = download.registerListener(listener)
+
+    fun registerNotificationListener(listener: KodiNotificationListener) = websocket.registerListener(listener)
+
+    @Suppress("unused")
+    fun registerNotificationListener(listener: (Notification<*>) -> Unit) =
+        websocket.registerListener(KodiNotificationListener { listener(it) })
 
     suspend fun removePlaylistItem(playlistId: Int, position: Int) =
-        jsonEngine.post(PlaylistRemove(playlistId = playlistId, position = position))
+        json.post(PlaylistRemove(playlistId = playlistId, position = position))
 
     fun seekFinish(progress: Float) {
         setPlayerElapsedTimeFromProgress(progress.toDouble())
         _playerId.value?.also {
             launchOnIOThread {
-                jsonEngine.post(PlayerSeek(playerId = it, value = PlayerSeek.Value(percentage = progress * 100f)))
+                json.post(PlayerSeek(playerId = it, value = PlayerSeek.Value(percentage = progress * 100f)))
             }
         }
     }
@@ -573,31 +514,35 @@ class Repository @Inject constructor(
         setPlayerElapsedTimeFromProgress(progress.toDouble())
     }
 
-    suspend fun sendKeypress(key: String) = jsonEngine.post(InputKeyPress(key))
+    suspend fun sendKeypress(key: String) = json.post(InputKeyPress(key))
 
-    suspend fun sendText(text: String, done: Boolean? = null) = jsonEngine.post(InputSendText(text = text, done = done))
+    suspend fun sendText(text: String, done: Boolean? = null) = json.post(InputSendText(text = text, done = done))
 
-    suspend fun setAudioStream(index: Int) = _playerId.value?.let {
-        jsonEngine.post(PlayerSetAudioStream(playerId = it, streamIndex = index))
+    fun setAskedNotificationPermission() {
+        preferences.edit().putBoolean(PREF_ASKED_NOTIFICATION_PERMISSION, true).apply()
     }
 
-    fun setForeground(value: Boolean) = websocketEngine.setForeground(value)
+    suspend fun setAudioStream(index: Int) = _playerId.value?.let {
+        json.post(PlayerSetAudioStream(playerId = it, streamIndex = index))
+    }
 
-    suspend fun setFullscreen() = jsonEngine.post(GuiSetFullscreen(fullscreen = GlobalToggle.True))
+    fun setForeground(value: Boolean) = websocket.setForeground(value)
 
-    suspend fun setMovieWatched(movieId: Int, value: Boolean) = jsonEngine.post(
+    suspend fun setFullscreen() = json.post(GuiSetFullscreen(fullscreen = GlobalToggle.True))
+
+    suspend fun setMovieWatched(movieId: Int, value: Boolean) = json.post(
         VideoLibrarySetMovieDetails(
             VideoLibrarySetMovieDetails.Params(movieid = movieId, playcount = if (value) 1 else 0),
         )
     )
 
-    suspend fun setMute(value: Boolean) = jsonEngine.post(ApplicationSetMute(mute = GlobalToggle.fromValue(value)))
+    suspend fun setMute(value: Boolean) = json.post(ApplicationSetMute(mute = GlobalToggle.fromValue(value)))
 
     suspend fun setSubtitle(index: Int) = _playerId.value?.let {
-        jsonEngine.post(PlayerSetSubtitle(playerId = it, subtitleIndex = index, enable = true))
+        json.post(PlayerSetSubtitle(playerId = it, subtitleIndex = index, enable = true))
     }
 
-    suspend fun setTvShowWatched(tvShowId: Int, value: Boolean) = jsonEngine.post(
+    suspend fun setTvShowWatched(tvShowId: Int, value: Boolean) = json.post(
         VideoLibrarySetTvShowDetails(
             VideoLibrarySetTvShowDetails.Params(tvshowid = tvShowId, playcount = if (value) 1 else 0),
         )
@@ -606,21 +551,31 @@ class Repository @Inject constructor(
     suspend fun setVolume(value: Int, rateLimited: Boolean = false) {
         val request = ApplicationSetVolume(volume = value)
 
-        if (rateLimited) jsonEngine.postRateLimited(request, 500L)
-        else jsonEngine.post(request)
+        if (rateLimited) json.postRateLimited(request, 500L)
+        else json.post(request)
     }
 
-    suspend fun stop() = _playerId.value?.let { jsonEngine.post(PlayerStop(playerId = it)) }
+    suspend fun stop() = _playerId.value?.let { json.post(PlayerStop(playerId = it)) }
 
     suspend fun swapPlaylistPositions(playlistId: Int, from: Int, to: Int) =
-        jsonEngine.post(PlaylistSwap(playlistId = playlistId, position1 = from, position2 = to))
+        json.post(PlaylistSwap(playlistId = playlistId, position1 = from, position2 = to))
 
     suspend fun toggleShuffle() = _playerId.value?.let {
-        jsonEngine.post(PlayerSetShuffle(playerId = it, shuffle = GlobalToggle.Toggle))
+        json.post(PlayerSetShuffle(playerId = it, shuffle = GlobalToggle.Toggle))
     }
 
+    fun tvShowPagingSource(
+        filter: ListFilter<ListFilterFieldsTvShows>? = null,
+        sort: ListSort? = ListSort(method = ListSort.Method.Title),
+        simpleFilter: VideoLibraryGetTvShows.SimpleFilter? = null,
+    ): MediaPagingSource<VideoDetailsTvShow> = MediaPagingSource { limits ->
+        listTvShows(filter = filter, sort = sort, simpleFilter = simpleFilter, limits = limits)
+    }
+
+    fun unregisterDownloadListener(listener: DownloadListener) = download.unregisterListener(listener)
+
     fun unregisterNotificationListener(listener: KodiNotificationListener) =
-        websocketEngine.unregisterListener(listener)
+        websocket.unregisterListener(listener)
 
     fun updateIsMuted(value: Boolean) {
         _isMuted.value = value
@@ -680,9 +635,41 @@ class Repository @Inject constructor(
 
     /** PRIVATE METHODS ***********************************************************************************************/
 
+    private suspend fun getStreamIntent(
+        baseUrl: String,
+        path: String,
+        defaultMimeType: String,
+        title: String? = null,
+    ): Intent? {
+        val mimeBase = defaultMimeType.takeWhile { it != '/' } + "/"
+        val details = json.post(
+            FilesGetFileDetails(file = path, properties = listOf(ListFieldsFiles.MimeType, ListFieldsFiles.Title))
+        ).resultOrNull?.filedetails
+        val mimeType = details?.mimetype?.takeIf { it.startsWith(mimeBase) } ?: defaultMimeType
+        val url = json.post(FilesPrepareDownload(path = path))
+            .resultOrNull?.details?.path?.let { "$baseUrl/$it" }
+
+        return url?.let {
+            Intent(Intent.ACTION_VIEW).apply {
+                setDataAndTypeAndNormalize(Uri.parse(it), mimeType)
+                (title ?: details?.title)?.also { putExtra("title", it) }
+            }
+        }
+    }
+
     private fun setPlayerElapsedTimeFromProgress(progress: Double) {
         _playerTotalTime.value?.also {
             _playerElapsedTime.value = it.times(progress).toLong()
+        }
+    }
+
+    /** OVERRIDDEN METHODS ********************************************************************************************/
+
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        when (key) {
+            PREF_ASKED_NOTIFICATION_PERMISSION -> {
+                _askedNotificationPermission.value = preferences.getBoolean(key, false)
+            }
         }
     }
 }

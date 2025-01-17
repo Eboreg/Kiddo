@@ -57,6 +57,7 @@ fun RemoteControlScreen(
                     errors = connectErrors,
                     hostname = hostname,
                     status = connectStatus,
+                    onNavigate = onNavigate,
                 )
             }
 

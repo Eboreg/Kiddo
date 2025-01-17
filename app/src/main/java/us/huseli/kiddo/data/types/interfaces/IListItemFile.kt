@@ -7,7 +7,7 @@ interface IListItemFile : IListItemBase {
     val filetype: FileType
     val lastmodified: String?
     val mimetype: String?
-    val size: Int?
+    val size: Long?
 
     @Suppress("unused")
     enum class FileType {

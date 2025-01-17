@@ -1,4 +1,4 @@
-package us.huseli.kiddo
+package us.huseli.kiddo.managers.jsonrpc
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -15,6 +15,9 @@ import us.huseli.kiddo.Constants.PREF_KODI_HOST
 import us.huseli.kiddo.Constants.PREF_KODI_PASSWORD
 import us.huseli.kiddo.Constants.PREF_KODI_PORT
 import us.huseli.kiddo.Constants.PREF_KODI_USERNAME
+import us.huseli.kiddo.KodiConnectionError
+import us.huseli.kiddo.KodiConnectionTimeoutError
+import us.huseli.kiddo.KodiError
 import us.huseli.kiddo.data.AbstractRequest
 import us.huseli.retaintheme.extensions.takeIfNotBlank
 import us.huseli.retaintheme.utils.AbstractScopeHolder
@@ -25,14 +28,9 @@ import javax.inject.Singleton
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
-interface KodiResponseListener {
-    fun <Result : Any> onKodiRequestSucceeded(request: AbstractRequest<Result>, result: Result)
-    fun onKodiRequestError(error: KodiError) {}
-}
-
 @OptIn(ExperimentalEncodingApi::class)
 @Singleton
-class KodiJsonRpcEngine @Inject constructor(@ApplicationContext context: Context) :
+class JsonRpcManager @Inject constructor(@ApplicationContext context: Context) :
     SharedPreferences.OnSharedPreferenceChangeListener, AbstractScopeHolder(), ILogger {
     private val listeners = mutableSetOf<KodiResponseListener>()
     private val preferences: SharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
@@ -128,9 +126,9 @@ class KodiJsonRpcEngine @Inject constructor(@ApplicationContext context: Context
     override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
         when (key) {
             PREF_KODI_HOST -> preferences.getString(key, null)?.also { _hostname.value = it }
+            PREF_KODI_PASSWORD -> _password.value = preferences.getString(key, null)?.takeIfNotBlank()
             PREF_KODI_PORT -> _port.value = preferences.getInt(key, 80)
             PREF_KODI_USERNAME -> _username.value = preferences.getString(key, null)?.takeIfNotBlank()
-            PREF_KODI_PASSWORD -> _password.value = preferences.getString(key, null)?.takeIfNotBlank()
         }
     }
 }

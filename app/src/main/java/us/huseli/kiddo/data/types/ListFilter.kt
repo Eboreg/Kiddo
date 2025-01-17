@@ -24,13 +24,14 @@ class ListFilter<Field : Any>(
         fun <Field : Any> and(vararg filters: ListFilter<Field>?): ListFilter<Field>? =
             and(filters.toList())
 
-        fun <Field : Any> and(filters: Iterable<ListFilter<Field>?>): ListFilter<Field>? =
-            filters.filterNotNull().takeIfNotEmpty()?.let { ListFilter(and = it) }
+        fun <Field : Any> and(filters: Iterable<ListFilter<Field>?>?): ListFilter<Field>? =
+            filters?.filterNotNull()?.takeIfNotEmpty()?.let { if (it.size == 1) it.first() else ListFilter(and = it) }
 
+        @Suppress("unused")
         fun <Field : Any> or(vararg filters: ListFilter<Field>?): ListFilter<Field>? =
             or(filters.toList())
 
-        fun <Field : Any> or(filters: Iterable<ListFilter<Field>?>): ListFilter<Field>? =
-            filters.filterNotNull().takeIfNotEmpty()?.let { ListFilter(or = it) }
+        fun <Field : Any> or(filters: Iterable<ListFilter<Field>?>?): ListFilter<Field>? =
+            filters?.filterNotNull()?.takeIfNotEmpty()?.let { if (it.size == 1) it.first() else ListFilter(or = it) }
     }
 }

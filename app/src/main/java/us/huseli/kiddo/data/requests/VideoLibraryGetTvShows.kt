@@ -1,9 +1,9 @@
 package us.huseli.kiddo.data.requests
 
-import us.huseli.kiddo.data.AbstractRefRequest
+import us.huseli.kiddo.data.AbstractListRequest
 import us.huseli.kiddo.data.enums.ListFilterFieldsTvShows
 import us.huseli.kiddo.data.enums.VideoFieldsTvShow
-import us.huseli.kiddo.data.requests.interfaces.IListFilterRequest
+import us.huseli.kiddo.data.requests.interfaces.IListResult
 import us.huseli.kiddo.data.requests.interfaces.ISimpleFilter
 import us.huseli.kiddo.data.types.ListFilter
 import us.huseli.kiddo.data.types.ListLimits
@@ -14,23 +14,32 @@ import us.huseli.kiddo.mapOfNotNull
 import java.lang.reflect.Type
 
 class VideoLibraryGetTvShows(
-    val properties: List<VideoFieldsTvShow>,
-    val limits: ListLimits? = null,
-    val sort: ListSort? = null,
+    override val properties: List<VideoFieldsTvShow> = listOf(
+        VideoFieldsTvShow.Art,
+        VideoFieldsTvShow.Fanart,
+        VideoFieldsTvShow.Episode,
+        VideoFieldsTvShow.Genre,
+        VideoFieldsTvShow.PlayCount,
+        VideoFieldsTvShow.Plot,
+        VideoFieldsTvShow.Rating,
+        VideoFieldsTvShow.Season,
+        VideoFieldsTvShow.Tag,
+        VideoFieldsTvShow.Thumbnail,
+        VideoFieldsTvShow.Title,
+        VideoFieldsTvShow.Votes,
+        VideoFieldsTvShow.WatchedEpisodes,
+        VideoFieldsTvShow.Year,
+    ),
+    override val limits: ListLimits? = null,
+    override val sort: ListSort? = null,
     override val filter: ListFilter<ListFilterFieldsTvShows>? = null,
     override val simpleFilter: SimpleFilter? = null,
-) : AbstractRefRequest<VideoLibraryGetTvShows.Result>(),
-    IListFilterRequest<ListFilter<ListFilterFieldsTvShows>, VideoLibraryGetTvShows.SimpleFilter> {
+) : AbstractListRequest<VideoDetailsTvShow>() {
     override val typeOfResult: Type = Result::class.java
     override val method: String = "VideoLibrary.GetTVShows"
 
-    override fun getParams(): Any {
-        return mapOf(
-            "properties" to properties,
-            "limits" to limits,
-            "sort" to sort,
-            "filter" to getFilterParams(),
-        )
+    override fun getParams(): Map<String, Any?> {
+        return super.getParams()
     }
 
     data class SimpleFilter(
@@ -54,7 +63,10 @@ class VideoLibraryGetTvShows(
     }
 
     data class Result(
-        val limits: ListLimitsReturned,
+        override val limits: ListLimitsReturned,
         val tvshows: List<VideoDetailsTvShow>?,
-    )
+    ) : IListResult<VideoDetailsTvShow> {
+        override val items: List<VideoDetailsTvShow>?
+            get() = tvshows
+    }
 }

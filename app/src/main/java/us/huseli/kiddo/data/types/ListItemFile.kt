@@ -1,5 +1,6 @@
 package us.huseli.kiddo.data.types
 
+import us.huseli.kiddo.AbstractListMembers
 import us.huseli.kiddo.data.enums.AudioAlbumReleaseType
 import us.huseli.kiddo.data.types.interfaces.IListItemBase
 import us.huseli.kiddo.data.types.interfaces.IListItemFile
@@ -75,7 +76,7 @@ data class ListItemFile(
     override val setid: Int?,
     override val showlink: List<String>?,
     override val showtitle: String?,
-    override val size: Int?,
+    override val size: Long?,
     override val songvideourl: String?,
     override val sortartist: String?,
     override val sorttitle: String?,
@@ -101,4 +102,6 @@ data class ListItemFile(
     override val watchedepisodes: Int?,
     override val writer: List<String>?,
     override val year: Int?,
-) : IListItemFile
+) : IListItemFile, AbstractListMembers() {
+    override fun toString(): String = nonNullPropertiesToString()
+}

@@ -6,6 +6,17 @@ import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import us.huseli.kiddo.KodiError
 import us.huseli.kiddo.data.enums.GlobalToggle
+import us.huseli.kiddo.data.requests.interfaces.IItemResult
+import us.huseli.kiddo.data.requests.interfaces.IListResult
+import us.huseli.kiddo.data.requests.interfaces.IRequestProperty
+import us.huseli.kiddo.data.requests.interfaces.ISimpleFilter
+import us.huseli.kiddo.data.types.KodiJsonRpcResponseError
+import us.huseli.kiddo.data.types.ListFilter
+import us.huseli.kiddo.data.types.ListLimits
+import us.huseli.kiddo.data.types.ListSort
+import us.huseli.kiddo.data.types.interfaces.IItemDetailsBase
+import us.huseli.kiddo.mapOfNotNull
+import us.huseli.retaintheme.extensions.takeIfNotEmpty
 import us.huseli.retaintheme.request.Request
 import us.huseli.retaintheme.utils.ILogger
 import java.lang.reflect.Type
@@ -26,6 +37,8 @@ abstract class AbstractRequest<Result : Any> : ILogger {
     val resultOrNull: Result?
         get() = _result
     var status: Status = Status.Pending
+        private set
+    var error: KodiJsonRpcResponseError? = null
         private set
 
     abstract fun getParams(): Any
@@ -62,6 +75,7 @@ abstract class AbstractRequest<Result : Any> : ILogger {
 
         if (error != null) {
             status = Status.Failed
+            this.error = error
             throw error
         }
         if (result != null) {
@@ -106,4 +120,37 @@ abstract class AbstractIntRequest : AbstractRequest<Int>() {
 abstract class AbstractStringRequest : AbstractRequest<String>() {
     override val responseTypeToken: TypeToken<KodiJsonRpcResponse<String>>
         get() = object : TypeToken<KodiJsonRpcResponse<String>>() {}
+}
+
+abstract class AbstractItemRequest<T : IItemDetailsBase> : AbstractRefRequest<IItemResult<T>>() {
+    open val properties: List<IRequestProperty>? = null
+
+    override fun getParams(): Map<String, Any?> {
+        return mapOfNotNull("properties" to properties)
+    }
+}
+
+abstract class AbstractListRequest<T : IItemDetailsBase> : AbstractRefRequest<IListResult<T>>() {
+    abstract val limits: ListLimits?
+    abstract val sort: ListSort?
+
+    open val filter: ListFilter<*>? = null
+    open val simpleFilter: ISimpleFilter? = null
+    open val properties: List<IRequestProperty>? = null
+
+    fun getFilterParams(): Map<String, Any>? {
+        return listOfNotNull(filter?.getParams(), simpleFilter?.getParams())
+            .takeIfNotEmpty()
+            ?.reduce { acc, m -> acc + m }
+            ?.takeIfNotEmpty()
+    }
+
+    override fun getParams(): Map<String, Any?> {
+        return mapOfNotNull(
+            "properties" to properties,
+            "limits" to limits,
+            "sort" to sort,
+            "filter" to getFilterParams(),
+        )
+    }
 }

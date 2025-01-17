@@ -2,8 +2,12 @@ package us.huseli.kiddo.compose.controls
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -23,25 +27,29 @@ fun NiceOutlinedButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    shape: Shape = MaterialTheme.shapes.extraSmall,
+    shape: Shape = MaterialTheme.shapes.small,
     colors: ButtonColors = ButtonDefaults.outlinedButtonColors(),
     elevation: ButtonElevation? = null,
     border: BorderStroke? = ButtonDefaults.outlinedButtonBorder(enabled),
-    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
     interactionSource: MutableInteractionSource? = null,
-    content: @Composable RowScope.() -> Unit
+    leadingIcon: @Composable (BoxScope.() -> Unit)? = null,
+    text: @Composable RowScope.() -> Unit
 ) = OutlinedButton(
     onClick = onClick,
-    modifier = modifier,
+    modifier = modifier.height(36.dp),
     enabled = enabled,
     shape = shape,
     colors = colors,
     elevation = elevation,
     border = border,
-    contentPadding = contentPadding,
+    contentPadding = PaddingValues(vertical = 5.dp, horizontal = 8.dp),
     interactionSource = interactionSource,
-    content = content,
-)
+) {
+    Row {
+        if (leadingIcon != null) Box(modifier = Modifier.height(20.dp).padding(start = 5.dp), content = leadingIcon)
+        Row(modifier = Modifier.padding(horizontal = 8.dp), content = text)
+    }
+}
 
 @Composable
 fun NiceOutlinedButton(
@@ -54,7 +62,6 @@ fun NiceOutlinedButton(
     colors: ButtonColors = ButtonDefaults.outlinedButtonColors(),
     elevation: ButtonElevation? = null,
     border: BorderStroke? = ButtonDefaults.outlinedButtonBorder(enabled),
-    contentPadding: PaddingValues = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
     interactionSource: MutableInteractionSource? = null,
 ) = NiceOutlinedButton(
     onClick = onClick,
@@ -64,9 +71,7 @@ fun NiceOutlinedButton(
     colors = colors,
     elevation = elevation,
     border = border,
-    contentPadding = contentPadding,
     interactionSource = interactionSource,
-) {
-    leadingIcon?.also { Icon(it, null, modifier = Modifier.padding(end = 10.dp)) }
-    Text(text)
-}
+    leadingIcon = leadingIcon?.let { { Icon(it, null) } },
+    text = { Text(text) },
+)

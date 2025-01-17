@@ -1,9 +1,9 @@
 package us.huseli.kiddo.data.requests
 
-import us.huseli.kiddo.data.AbstractRefRequest
+import us.huseli.kiddo.data.AbstractListRequest
 import us.huseli.kiddo.data.enums.ListFilterFieldsMovies
 import us.huseli.kiddo.data.enums.VideoFieldsMovie
-import us.huseli.kiddo.data.requests.interfaces.IListFilterRequest
+import us.huseli.kiddo.data.requests.interfaces.IListResult
 import us.huseli.kiddo.data.requests.interfaces.ISimpleFilter
 import us.huseli.kiddo.data.types.ListFilter
 import us.huseli.kiddo.data.types.ListLimits
@@ -14,23 +14,30 @@ import us.huseli.kiddo.mapOfNotNull
 import java.lang.reflect.Type
 
 class VideoLibraryGetMovies(
-    val properties: List<VideoFieldsMovie>,
-    val limits: ListLimits? = null,
-    val sort: ListSort? = null,
+    override val properties: List<VideoFieldsMovie> = listOf(
+        VideoFieldsMovie.Art,
+        VideoFieldsMovie.Director,
+        VideoFieldsMovie.File,
+        VideoFieldsMovie.Genre,
+        VideoFieldsMovie.LastPlayed,
+        VideoFieldsMovie.PlayCount,
+        VideoFieldsMovie.Rating,
+        VideoFieldsMovie.Resume,
+        VideoFieldsMovie.Runtime,
+        VideoFieldsMovie.Tagline,
+        VideoFieldsMovie.Title,
+        VideoFieldsMovie.Year,
+    ),
+    override val limits: ListLimits? = null,
+    override val sort: ListSort? = null,
     override val simpleFilter: SimpleFilter? = null,
     override val filter: ListFilter<ListFilterFieldsMovies>? = null,
-) : AbstractRefRequest<VideoLibraryGetMovies.Result>(),
-    IListFilterRequest<ListFilter<ListFilterFieldsMovies>, VideoLibraryGetMovies.SimpleFilter> {
+) : AbstractListRequest<VideoDetailsMovie>() {
     override val typeOfResult: Type = Result::class.java
     override val method: String = "VideoLibrary.GetMovies"
 
     override fun getParams(): Map<String, Any?> {
-        return mapOf(
-            "properties" to properties,
-            "limits" to limits,
-            "sort" to sort,
-            "filter" to getFilterParams(),
-        )
+        return super.getParams()
     }
 
     /* N.B.: Using simple filter for director did not work at all 2025-01-08 (JSONRPC v13.5.0). */
@@ -62,7 +69,10 @@ class VideoLibraryGetMovies(
     }
 
     data class Result(
-        val limits: ListLimitsReturned,
-        val movies: List<VideoDetailsMovie>,
-    )
+        override val limits: ListLimitsReturned,
+        val movies: List<VideoDetailsMovie>?,
+    ) : IListResult<VideoDetailsMovie> {
+        override val items: List<VideoDetailsMovie>?
+            get() = movies
+    }
 }

@@ -1,9 +1,10 @@
 package us.huseli.kiddo.data.enums
 
 import com.google.gson.annotations.SerializedName
+import us.huseli.kiddo.data.interfaces.IFilterField
 
 @Suppress("unused")
-enum class ListFilterFieldsAlbums {
+enum class ListFilterFieldsAlbums : IFilterField {
     @SerializedName("album") Album,
     @SerializedName("albumartist") AlbumArtist,
     @SerializedName("albumduration") AlbumDuration,

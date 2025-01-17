@@ -5,28 +5,32 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.toRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import us.huseli.kiddo.Repository
+import us.huseli.kiddo.data.notifications.Notification
 import us.huseli.kiddo.data.types.VideoDetailsTvShow
 import us.huseli.kiddo.data.types.interfaces.IVideoDetailsTvShow
+import us.huseli.kiddo.managers.websocket.KodiNotificationListener
+import us.huseli.kiddo.paging.MediaPagingSource
 import us.huseli.kiddo.routing.Routes
-import us.huseli.retaintheme.extensions.launchOnIOThread
 import us.huseli.retaintheme.extensions.takeIfNotBlank
 import javax.inject.Inject
 
 @HiltViewModel
 class TvShowListViewModel @Inject constructor(
-    override val repository: Repository,
+    val repository: Repository,
     savedStateHandle: SavedStateHandle,
-) : AbstractSafeLoaderViewModel<List<VideoDetailsTvShow>>() {
+) : AbstractItemListViewModel<VideoDetailsTvShow>(), KodiNotificationListener {
     private val _posters = MutableStateFlow<Map<Int, ImageBitmap?>>(emptyMap())
 
     val route = savedStateHandle.toRoute<Routes.TvShowList>()
-    val tvShows = data.filterNotNull().stateWhileSubscribed(emptyList())
+
+    override val pagingSourceFactory: () -> MediaPagingSource<VideoDetailsTvShow> = {
+        repository.tvShowPagingSource(filter = route.filter, sort = route.listSort)
+    }
 
     init {
-        launchOnIOThread { loadData() }
+        repository.registerNotificationListener(this)
     }
 
     fun flowPoster(show: IVideoDetailsTvShow) = _posters.map { posters ->
@@ -36,7 +40,18 @@ class TvShowListViewModel @Inject constructor(
             .also { _posters.value += show.tvshowid to it }
     }.stateWhileSubscribed()
 
-    override suspend fun getData(): List<VideoDetailsTvShow>? {
-        return repository.listTvShows(filter = route.getFilter(), sort = route.getListSort())
+    override fun onCleared() {
+        super.onCleared()
+        repository.unregisterNotificationListener(this)
+    }
+
+    override fun onKodiNotification(notification: Notification<*>) {
+        if (
+            listOf(
+                "VideoLibrary.OnRefresh",
+                "VideoLibrary.OnScanFinished",
+                "VideoLibrary.OnCleanFinished",
+            ).contains(notification.method)
+        ) invalidateSource()
     }
 }

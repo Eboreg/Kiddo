@@ -1,11 +1,11 @@
 package us.huseli.kiddo.compose.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.sharp.Tv
 import androidx.compose.material3.Text
@@ -19,10 +19,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
 import us.huseli.kiddo.R
+import us.huseli.kiddo.compose.LoadingFlash
 import us.huseli.kiddo.compose.MediaListFilterDialog
 import us.huseli.kiddo.compose.MediaListFilterParameter
 import us.huseli.kiddo.compose.MediaListItem
@@ -39,10 +43,8 @@ fun TvShowListScreen(
     onNavigate: (Routes) -> Unit,
     viewModel: TvShowListViewModel = hiltViewModel(),
 ) {
-    val tvShows by viewModel.tvShows.collectAsStateWithLifecycle()
+    val tvShows = viewModel.pager.collectAsLazyPagingItems()
     val route = viewModel.route
-    val loading by viewModel.loading.collectAsStateWithLifecycle()
-    val exception by viewModel.exception.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
 
     var isFilterDialogOpen by rememberSaveable { mutableStateOf(false) }
@@ -63,7 +65,7 @@ fun TvShowListScreen(
 
     if (isSortDialogOpen) {
         MediaListSortDialog(
-            sort = route.getListSort(),
+            sort = route.listSort,
             onSubmit = { onNavigate(route.applyListSort(it)) },
             onDismissRequest = { isSortDialogOpen = false },
             methods = listOf(
@@ -76,52 +78,51 @@ fun TvShowListScreen(
         )
     }
 
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        stickyHeader {
-            MediaListControls(
-                onFilterClick = { isFilterDialogOpen = true },
-                onSortClick = { isSortDialogOpen = true },
-                hasFilters = route.hasFilters(),
-                showSearch = route.hasSearch(),
-                freetext = route.freetext ?: "",
-                onSearch = { onNavigate(route.copy(freetext = it)) },
-                focusRequester = focusRequester,
-            )
-        }
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (tvShows.loadState.refresh == LoadState.Loading) LoadingFlash()
 
-        if (loading) item {
-            Text(stringResource(R.string.loading_ellipsis), modifier = Modifier.padding(10.dp))
-        }
-
-        exception?.also {
-            item {
-                Text(stringResource(R.string.failed_to_get_tv_shows_x, it), modifier = Modifier.padding(10.dp))
+        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+            stickyHeader {
+                MediaListControls(
+                    onFilterClick = { isFilterDialogOpen = true },
+                    onSortClick = { isSortDialogOpen = true },
+                    hasFilters = route.hasFilters,
+                    showSearch = route.hasSearch,
+                    freetext = route.freetext ?: "",
+                    onSearch = { onNavigate(route.copy(freetext = it)) },
+                    focusRequester = focusRequester,
+                )
             }
-        }
 
-        itemsIndexed(tvShows, key = { _, show -> show.tvshowid }) { index, show ->
-            val poster by viewModel.flowPoster(show).collectAsStateWithLifecycle()
+            (tvShows.loadState.refresh as? LoadState.Error)?.error?.also {
+                item {
+                    Text(stringResource(R.string.failed_to_get_tv_shows_x, it), modifier = Modifier.padding(10.dp))
+                }
+            }
 
-            MediaListItem(
-                title = show.displayTitle,
-                index = index,
-                placeholderIcon = Icons.Sharp.Tv,
-                thumbnailWidth = 60.dp,
-                isCurrentItem = false,
-                thumbnail = poster,
-                genres = show.genre,
-                rating = show.rating,
-                progress = show.progress,
-                supportingContent = listOfNotNull(
-                    show.year?.takeIf { it > 0 }?.toString(),
-                    show.season?.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.x_seasons, it, it) },
-                    show.episode?.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.x_episodes, it, it) },
-                ).takeIfNotEmpty()?.joinToString(" · "),
-                onClick = { onNavigate(Routes.TvShowDetails(tvShowId = show.tvshowid)) },
-            )
+            items(count = tvShows.itemCount) { index ->
+                tvShows[index]?.also { show ->
+                    val poster by viewModel.flowPoster(show).collectAsStateWithLifecycle()
+
+                    MediaListItem(
+                        title = show.displayTitle,
+                        index = index,
+                        placeholderIcon = Icons.Sharp.Tv,
+                        isCurrentItem = false,
+                        thumbnail = poster,
+                        genres = show.genre,
+                        rating = show.rating,
+                        progress = show.progress,
+                        supportingContent = listOfNotNull(
+                            show.year?.takeIf { it > 0 }?.toString(),
+                            show.season?.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.x_seasons, it, it) },
+                            show.episode?.takeIf { it > 0 }?.let { pluralStringResource(R.plurals.x_episodes, it, it) },
+                        ).takeIfNotEmpty()?.joinToString(" · "),
+                        onClick = { onNavigate(Routes.TvShowDetails(tvShowId = show.tvshowid)) },
+                        thumbnailSize = DpSize(width = 60.dp, height = 90.dp),
+                    )
+                }
+            }
         }
     }
 }

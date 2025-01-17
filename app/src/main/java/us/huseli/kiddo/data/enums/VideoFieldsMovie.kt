@@ -1,9 +1,10 @@
 package us.huseli.kiddo.data.enums
 
 import com.google.gson.annotations.SerializedName
+import us.huseli.kiddo.data.requests.interfaces.IRequestProperty
 
 @Suppress("unused")
-enum class VideoFieldsMovie {
+enum class VideoFieldsMovie : IRequestProperty {
     @SerializedName("art") Art,
     @SerializedName("cast") Cast,
     @SerializedName("country") Country,

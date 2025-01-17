@@ -1,9 +1,16 @@
 package us.huseli.kiddo.compose
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -14,6 +21,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -55,23 +63,39 @@ fun App(viewModel: AppViewModel = hiltViewModel()) {
     val currentPlayerItem by viewModel.currentPlayerItem.collectAsStateWithLifecycle()
     val playerProperties by viewModel.playerProperties.collectAsStateWithLifecycle()
     val remoteControlScreenActive = currentEntry?.destination?.hasRoute<Routes.RemoteControl>() == true
+    val askedNotificationPermission by viewModel.askedNotificationPermission.collectAsStateWithLifecycle()
+    val permissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+            viewModel.setAskedNotificationPermission()
+        }
+
+    if (!askedNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        SideEffect {
+            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {},
                 actions = {
-                    for (item in MenuItems) {
-                        val isCurrentRoute = currentEntry?.destination?.hasRoute(item.route::class) == true
-                        val colors =
-                            if (isCurrentRoute) IconButtonDefaults.filledIconButtonColors()
-                            else IconButtonDefaults.iconButtonColors()
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        for (item in MenuItems) {
+                            val isCurrentRoute = currentEntry?.destination?.hasRoute(item.route::class) == true
+                            val colors =
+                                if (isCurrentRoute) IconButtonDefaults.filledIconButtonColors()
+                                else IconButtonDefaults.iconButtonColors()
 
-                        FilledIconButton(
-                            onClick = { navController.navigate(item.route) },
-                            colors = colors,
-                            content = { Icon(item.icon, stringResource(item.label)) },
-                        )
+                            FilledIconButton(
+                                onClick = { navController.navigate(item.route) },
+                                colors = colors,
+                                content = { Icon(item.icon, stringResource(item.label)) },
+                            )
+                        }
                     }
                 },
             )

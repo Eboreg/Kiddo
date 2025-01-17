@@ -9,20 +9,24 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import us.huseli.kiddo.KodiWebsocketEngine
+import us.huseli.kiddo.managers.websocket.WebsocketManager
 import us.huseli.kiddo.R
+import us.huseli.kiddo.compose.controls.NiceOutlinedButton
+import us.huseli.kiddo.routing.Routes
 
 @Composable
 fun PlayerPanelNoMedia(
     modifier: Modifier = Modifier,
     errors: List<String> = emptyList(),
     hostname: String?,
-    status: KodiWebsocketEngine.Status,
+    status: WebsocketManager.Status,
+    onNavigate: (Routes) -> Unit,
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -38,17 +42,17 @@ fun PlayerPanelNoMedia(
                 .padding(20.dp)
         ) {
             val statusText = when (status) {
-                KodiWebsocketEngine.Status.Pending -> stringResource(R.string.initializing_ellipsis)
-                KodiWebsocketEngine.Status.Connecting -> hostname?.let {
+                WebsocketManager.Status.Pending -> stringResource(R.string.initializing_ellipsis)
+                WebsocketManager.Status.Connecting -> hostname?.let {
                     stringResource(R.string.connecting_to_x, it)
                 }
 
-                KodiWebsocketEngine.Status.Connected -> hostname?.let {
+                WebsocketManager.Status.Connected -> hostname?.let {
                     stringResource(R.string.connected_to_x, it)
                 }
 
-                KodiWebsocketEngine.Status.NoHostname -> stringResource(R.string.no_hostname_configured)
-                KodiWebsocketEngine.Status.Error -> null
+                WebsocketManager.Status.NoHostname -> stringResource(R.string.no_hostname_configured)
+                WebsocketManager.Status.Error -> null
             }
 
             statusText?.also {
@@ -66,12 +70,18 @@ fun PlayerPanelNoMedia(
                 }
             }
 
-            if (status == KodiWebsocketEngine.Status.Connected) {
+            if (status == WebsocketManager.Status.Connected) {
                 Text(
                     text = stringResource(R.string.no_media_loaded),
                     style = MaterialTheme.typography.titleLarge,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
+                )
+            } else if (status == WebsocketManager.Status.NoHostname) {
+                NiceOutlinedButton(
+                    onClick = { onNavigate(Routes.Settings) },
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    text = { Text(stringResource(R.string.settings)) },
                 )
             }
         }

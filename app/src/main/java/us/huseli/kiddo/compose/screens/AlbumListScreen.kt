@@ -1,13 +1,10 @@
 package us.huseli.kiddo.compose.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.sharp.Album
 import androidx.compose.material3.Text
@@ -22,10 +19,14 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
 import us.huseli.kiddo.R
+import us.huseli.kiddo.compose.LoadingFlash
 import us.huseli.kiddo.compose.MediaListFilterDialog
 import us.huseli.kiddo.compose.MediaListFilterParameter
 import us.huseli.kiddo.compose.MediaListItem
@@ -41,10 +42,8 @@ fun AlbumListScreen(
     onNavigate: (Routes) -> Unit,
     viewModel: AlbumListViewModel = hiltViewModel(),
 ) {
-    val albums by viewModel.albums.collectAsStateWithLifecycle()
     val route = viewModel.route
-    val loading by viewModel.loading.collectAsStateWithLifecycle()
-    val exception by viewModel.exception.collectAsStateWithLifecycle()
+    val albums = viewModel.pager.collectAsLazyPagingItems()
 
     val focusRequester = remember { FocusRequester() }
     var isFilterDialogOpen by rememberSaveable { mutableStateOf(false) }
@@ -66,7 +65,7 @@ fun AlbumListScreen(
 
     if (isSortDialogOpen) {
         MediaListSortDialog(
-            sort = viewModel.route.getListSort(),
+            sort = viewModel.route.listSort,
             onSubmit = { onNavigate(route.applyListSort(it)) },
             onDismissRequest = { isSortDialogOpen = false },
             methods = listOf(
@@ -80,49 +79,50 @@ fun AlbumListScreen(
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (albums.loadState.refresh == LoadState.Loading) LoadingFlash()
+
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
             stickyHeader {
                 MediaListControls(
                     onFilterClick = { isFilterDialogOpen = true },
                     onSortClick = { isSortDialogOpen = true },
-                    hasFilters = route.hasFilters(),
-                    showSearch = route.hasSearch(),
+                    hasFilters = route.hasFilters,
+                    showSearch = route.hasSearch,
                     freetext = route.freetext ?: "",
                     onSearch = { onNavigate(route.copy(freetext = it)) },
                     focusRequester = focusRequester,
                 )
             }
 
-            if (loading) item {
-                Text(stringResource(R.string.loading_ellipsis), modifier = Modifier.padding(10.dp))
-            }
-
-            exception?.also {
+            (albums.loadState.refresh as? LoadState.Error)?.error?.also {
                 item {
                     Text(stringResource(R.string.failed_to_get_albums_x, it), modifier = Modifier.padding(10.dp))
                 }
             }
 
-            itemsIndexed(albums, key = { _, album -> album.albumid }) { index, album ->
-                val cover by viewModel.flowCover(album).collectAsStateWithLifecycle()
+            items(count = albums.itemCount) { index ->
+                albums[index]?.also { album ->
+                    val cover by viewModel.flowCover(album).collectAsStateWithLifecycle()
 
-                MediaListItem(
-                    title = album.displayTitle,
-                    index = index,
-                    subTitle = {
-                        album.artistString?.also {
-                            Text(it, maxLines = 1, overflow = TextOverflow.Ellipsis, fontStyle = FontStyle.Italic)
-                        }
-                    },
-                    genres = album.allGenres,
-                    supportingContent = album.supportingContent,
-                    rating = album.rating,
-                    thumbnail = cover,
-                    isCurrentItem = false,
-                    onClick = { onNavigate(Routes.AlbumDetails(albumId = album.albumid)) },
-                    placeholderIcon = Icons.Sharp.Album,
-                )
+                    MediaListItem(
+                        title = album.displayTitle,
+                        index = index,
+                        subTitle = {
+                            album.artistString?.also {
+                                Text(it, maxLines = 1, overflow = TextOverflow.Ellipsis, fontStyle = FontStyle.Italic)
+                            }
+                        },
+                        genres = album.allGenres,
+                        supportingContent = album.supportingContent,
+                        rating = album.rating,
+                        thumbnail = cover,
+                        thumbnailSize = DpSize(width = 100.dp, height = 100.dp),
+                        isCurrentItem = false,
+                        onClick = { onNavigate(Routes.AlbumDetails(albumId = album.albumid)) },
+                        placeholderIcon = Icons.Sharp.Album,
+                    )
+                }
             }
         }
     }

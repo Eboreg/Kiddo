@@ -14,7 +14,6 @@
     <string name="connected_to_x">Connected to %1$s</string>
     <string name="connecting_to_x">Connecting to %1$s …</string>
     <string name="context_menu">Context menu</string>
-    <string name="could_not_find_a_suitable_app_try_installing_vlc">Could not find a suitable app; try installing VLC.</string>
     <string name="countries">Countries</string>
     <string name="country">Country</string>
     <string name="date_added">Date added</string>
@@ -24,6 +23,9 @@
     <string name="description">Description</string>
     <string name="directors">Directors</string>
     <string name="down">Down</string>
+    <string name="download">Download</string>
+    <string name="download_notifications">Download notifications</string>
+    <string name="downloading_x_ellipsis">Downloading %1$s …</string>
     <string name="enqueue">Enqueue</string>
     <string name="failed_to_get_album_x">Failed to get album: %1$s</string>
     <string name="failed_to_get_albums_x">Failed to get albums: %1$s</string>
@@ -79,12 +81,14 @@
     <string name="show_less">Show less</string>
     <string name="show_more">Show more</string>
     <string name="shuffle">Shuffle</string>
+    <string name="size">Size</string>
     <string name="skip_to_next">Skip to next</string>
     <string name="skip_to_previous">Skip to previous</string>
     <string name="songs">Songs</string>
     <string name="sort">Sort</string>
     <string name="stop">Stop</string>
     <string name="stream">Stream</string>
+    <string name="stream_error_message">Could not find a suitable app; try installing VLC.</string>
     <string name="style">Style</string>
     <string name="styles">Styles</string>
     <string name="subtitles">Subtitles</string>
@@ -102,6 +106,11 @@
     <string name="x_votes">%1$s votes</string>
     <string name="x_was_enqueued">%1$s was enqueued.</string>
     <string name="year">Year</string>
+    <string name="x_download_started">%1$s download started.</string>
+    <string name="x_download_cancelled">%1$s download cancelled.</string>
+    <string name="x_download_finished">%1$s download finished.</string>
+    <string name="downloading_ellipsis">Downloading …</string>
+    <string name="cancel_download">Cancel download</string>
     <plurals name="x_episodes">
         <item quantity="one">1 episode</item>
         <item quantity="other">%1$d episodes</item>

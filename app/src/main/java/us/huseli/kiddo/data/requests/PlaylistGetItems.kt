@@ -1,22 +1,36 @@
 package us.huseli.kiddo.data.requests
 
-import us.huseli.kiddo.data.AbstractRefRequest
+import us.huseli.kiddo.data.AbstractListRequest
 import us.huseli.kiddo.data.enums.ListFieldsAll
+import us.huseli.kiddo.data.requests.interfaces.IListResult
 import us.huseli.kiddo.data.types.ListItemAll
+import us.huseli.kiddo.data.types.ListLimits
 import us.huseli.kiddo.data.types.ListLimitsReturned
+import us.huseli.kiddo.data.types.ListSort
 import java.lang.reflect.Type
 
 class PlaylistGetItems(
     val playlistId: Int,
-    val properties: List<ListFieldsAll>,
-) : AbstractRefRequest<PlaylistGetItems.Result>() {
+    override val properties: List<ListFieldsAll> = listOf(
+        ListFieldsAll.Artist,
+        ListFieldsAll.CustomProperties,
+        ListFieldsAll.Director,
+        ListFieldsAll.Duration,
+        ListFieldsAll.File,
+        ListFieldsAll.Runtime,
+        ListFieldsAll.Thumbnail,
+        ListFieldsAll.Title,
+    ),
+    override val limits: ListLimits? = null,
+    override val sort: ListSort? = null,
+) : AbstractListRequest<ListItemAll>() {
     override val method: String = "Playlist.GetItems"
     override val typeOfResult: Type = Result::class.java
 
-    override fun getParams() = mapOf("playlistid" to playlistId, "properties" to properties)
+    override fun getParams() = super.getParams() + ("playlistid" to playlistId)
 
     data class Result(
-        val items: List<ListItemAll>,
-        val limits: ListLimitsReturned,
-    )
+        override val items: List<ListItemAll>,
+        override val limits: ListLimitsReturned,
+    ) : IListResult<ListItemAll>
 }

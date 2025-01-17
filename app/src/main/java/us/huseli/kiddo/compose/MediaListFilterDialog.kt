@@ -43,13 +43,16 @@ fun MediaListFilterDialog(
     AlertDialog(
         onDismissRequest = onDismissRequest,
         confirmButton = {
-            NiceOutlinedButton(onClick = {
-                onSubmit(
-                    params.map { param ->
-                        param.copy(value = data[param.key]?.takeIfNotBlank())
-                    }
-                )
-            }) { Text(stringResource(R.string.apply)) }
+            NiceOutlinedButton(
+                onClick = {
+                    onSubmit(
+                        params.map { param ->
+                            param.copy(value = data[param.key]?.takeIfNotBlank())
+                        }
+                    )
+                },
+                text = { Text(stringResource(R.string.apply)) },
+            )
         },
         dismissButton = {
             TextButton(onClick = { onSubmit(params.clear()) }) { Text(stringResource(R.string.clear_all)) }

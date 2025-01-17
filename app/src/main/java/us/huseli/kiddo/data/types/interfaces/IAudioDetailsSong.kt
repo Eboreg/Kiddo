@@ -33,4 +33,9 @@ interface IAudioDetailsSong : IAudioDetailsMedia {
     val songid: Int
     val sourceid: List<Int>?
     val track: Int?
+
+    fun getTrackNumber(totalDiscs: Int?): String? {
+        val prefix = disc?.takeIf { (totalDiscs ?: 1) > 1 }?.let { "$it-" } ?: ""
+        return track?.let { "$prefix$it" }
+    }
 }
